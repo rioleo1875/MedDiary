@@ -76,13 +76,13 @@ CREATE TABLE `family_members` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `medictaions`
+-- Table structure for table `medications`
 --
 
-DROP TABLE IF EXISTS `medictaions`;
+DROP TABLE IF EXISTS `medications`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `medictaions` (
+CREATE TABLE `medications` (
   `med_id` int NOT NULL AUTO_INCREMENT,
   `member_id` int NOT NULL,
   `med_name` varchar(100) DEFAULT NULL,
@@ -92,7 +92,7 @@ CREATE TABLE `medictaions` (
   `end_date` date DEFAULT NULL,
   PRIMARY KEY (`med_id`),
   KEY `member_id` (`member_id`),
-  CONSTRAINT `medictaions_ibfk_1` FOREIGN KEY (`member_id`) REFERENCES `family_members` (`member_id`)
+  CONSTRAINT `medications_ibfk_1` FOREIGN KEY (`member_id`) REFERENCES `family_members` (`member_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -160,4 +160,4 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-02-08 17:30:26
+-- Dump completed on 2026-02-08 23:00:12
