@@ -1,64 +1,107 @@
 const express = require("express");
-const router = express.Router();
 const axios = require("axios");
+const router = express.Router();
 
-// Helper function to fetch drug info
+
+const db = require("backend/config/db"); 
+
+
+
 async function getDrugInfo(drugName) {
   const url = `https://api.fda.gov/drug/label.json?search=openfda.brand_name:${drugName}&limit=1`;
 
   try {
     const response = await axios.get(url);
     return response.data.results[0];
-  } catch (err) {
-    return null;
+  } catch (error) {
+    return null; 
   }
 }
 
-// Check interaction
-router.post("/check", async (req, res) => {
-  const { drug1, drug2 } = req.body;
+function checkInteraction(drugAData, drugBName) {
+  const text = JSON.stringify(drugAData).toLowerCase();
 
-  if (!drug1 || !drug2) {
-    return res.status(400).json({
-      error: "Both drug names are required"
-    });
+  if (text.includes(drugBName.toLowerCase())) {
+    return {
+      severity: "High",
+      message: "Possible high-risk interaction"
+    };
   }
 
-  try {
-    const drug1Data = await getDrugInfo(drug1.toLowerCase());
-    const drug2Data = await getDrugInfo(drug2.toLowerCase());
+  return {
+    severity: "Low",
+    message: "No known interaction"
+  };
+}
 
-    if (!drug1Data || !drug2Data) {
+router.post("/check/:userId", async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+   
+    const [rows] = await db.query(
+      "SELECT drug_name FROM medications WHERE user_id = ?",
+      [userId]
+    );
+
+    if (rows.length < 2) {
       return res.json({
-        message: "Drug information not found",
-        severity: "Unknown"
+        warningMessage: "Not enough medications to check interactions.",
+        interactions: []
       });
     }
 
-    const warnings1 = JSON.stringify(drug1Data).toLowerCase();
-    const warnings2 = JSON.stringify(drug2Data).toLowerCase();
+  
+    const medications = rows.map(r => r.drug_name.toLowerCase());
 
-    let interaction = "No known interaction found";
-    let severity = "Low";
+    
+    let interactions = [];
 
-    if (
-      warnings1.includes(drug2.toLowerCase()) ||
-      warnings2.includes(drug1.toLowerCase())
-    ) {
-      interaction = "Possible interaction detected. Please consult a doctor.";
-      severity = "High";
+    for (let i = 0; i < medications.length; i++) {
+      for (let j = i + 1; j < medications.length; j++) {
+
+        const drugA = medications[i];
+        const drugB = medications[j];
+
+        const drugAData = await getDrugInfo(drugA);
+        if (!drugAData) continue;
+
+        const result = checkInteraction(drugAData, drugB);
+
+        if (result.severity === "High") {
+          interactions.push({
+            drug1: drugA,
+            drug2: drugB,
+            severity: "High"
+          });
+        }
+      }
     }
 
-    res.json({
-      drug1,
-      drug2,
-      interaction,
-      severity
+    
+    let warningMessage = "No high-risk drug interactions detected.";
+
+    if (interactions.length > 0) {
+      const pairs = interactions
+        .map(i => `${i.drug1} and ${i.drug2}`)
+        .join(", ");
+
+      warningMessage = `The drugs ${pairs} have a high risk of interaction. Please consult your doctor.`;
+    }
+
+   
+    return res.json({
+      userId,
+      totalMedications: medications.length,
+      highRiskCount: interactions.length,
+      warningMessage,
+      interactions
     });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({
-      error: "Error checking interaction"
+      error: "Error checking drug interactions"
     });
   }
 });
