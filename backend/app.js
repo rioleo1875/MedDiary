@@ -15,4 +15,8 @@ app.get("/", (req, res) => {
 const ddiRoute = require("./routes/ddi");
 app.use("/api/ddi", ddiRoute);
 
+//Chatbot route
+const chatbotRoutes = require("./routes/chatbot");
+app.use("/api/chatbot", chatbotRoutes);
+
 module.exports = app;
