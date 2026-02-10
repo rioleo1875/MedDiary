@@ -1,10 +1,7 @@
 const express = require("express");
 const axios = require("axios");
 const router = express.Router();
-
-
-const db = require("../config/db"); 
-
+const db = require("../config/db");
 
 
 async function getDrugInfo(drugName) {
@@ -13,10 +10,11 @@ async function getDrugInfo(drugName) {
   try {
     const response = await axios.get(url);
     return response.data.results[0];
-  } catch (error) {
-    return null; 
+  } catch (err) {
+    return null;
   }
 }
+
 
 function checkInteraction(drugAData, drugBName) {
   const text = JSON.stringify(drugAData).toLowerCase();
@@ -34,13 +32,14 @@ function checkInteraction(drugAData, drugBName) {
   };
 }
 
+
 router.post("/check/:userId", async (req, res) => {
-  const userId = req.params.userId;
+  const { userId } = req.params;
 
   try {
-   
+    
     const [rows] = await db.query(
-      "SELECT drug_name FROM medications WHERE user_id = ?",
+      "SELECT med_name FROM medications WHERE member_id = ?",
       [userId]
     );
 
@@ -50,18 +49,16 @@ router.post("/check/:userId", async (req, res) => {
         interactions: []
       });
     }
-
+    const meds = [...new Set(
+    rows.map(r => r.med_name.toLowerCase())
+      )];
   
-    const medications = rows.map(r => r.drug_name.toLowerCase());
-
-    
     let interactions = [];
 
-    for (let i = 0; i < medications.length; i++) {
-      for (let j = i + 1; j < medications.length; j++) {
-
-        const drugA = medications[i];
-        const drugB = medications[j];
+    for (let i = 0; i < meds.length; i++) {
+      for (let j = i + 1; j < meds.length; j++) {
+        const drugA = meds[i];
+        const drugB = meds[j];
 
         const drugAData = await getDrugInfo(drugA);
         if (!drugAData) continue;
@@ -78,7 +75,6 @@ router.post("/check/:userId", async (req, res) => {
       }
     }
 
-    
     let warningMessage = "No high-risk drug interactions detected.";
 
     if (interactions.length > 0) {
@@ -89,17 +85,16 @@ router.post("/check/:userId", async (req, res) => {
       warningMessage = `The drugs ${pairs} have a high risk of interaction. Please consult your doctor.`;
     }
 
-   
-    return res.json({
+    res.json({
       userId,
-      totalMedications: medications.length,
+      totalMedications: meds.length,
       highRiskCount: interactions.length,
       warningMessage,
       interactions
     });
 
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error("DDI ERROR:", err);
     res.status(500).json({
       error: "Error checking drug interactions"
     });

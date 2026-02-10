@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 const mysql = require("mysql2");
+=======
+const mysql = require("mysql2/promise");
+>>>>>>> Stashed changes
 require("dotenv").config();
 
 const db = mysql.createPool({
@@ -9,15 +13,6 @@ const db = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
-});
-
-db.getConnection((err, connection) => {
-  if (err) {
-    console.error("❌ MySQL connection failed:", err.message);
-  } else {
-    console.log("✅ MySQL connected");
-    connection.release();
-  }
 });
 
 module.exports = db;
