@@ -3,7 +3,7 @@ const axios = require("axios");
 const router = express.Router();
 
 
-const db = require("backend/config/db"); 
+const db = require("../config/db"); 
 
 
 
