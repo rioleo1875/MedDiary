@@ -20,7 +20,15 @@ const chatbotRoutes = require("./routes/chatbot");
 app.use("/api/chatbot", chatbotRoutes);
 
 //Test Result route
-const testsRoute = require("./routes/tests");
-app.use("/api/tests", testsRoute);
+const testRoutes = require("./routes/tests");
+app.use("/api/tests", testRoutes);
+
+// OCR route
+const ocrRoute = require("./routes/ocr");
+app.use("/api/ocr", ocrRoute);
+
+// Summary route
+const summaryRoute = require("./routes/summary");
+app.use("/api/summary", summaryRoute);
 
 module.exports = app;
