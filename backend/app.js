@@ -19,4 +19,8 @@ app.use("/api/ddi", ddiRoute);
 const chatbotRoutes = require("./routes/chatbot");
 app.use("/api/chatbot", chatbotRoutes);
 
+//Test Result route
+const testsRoute = require("./routes/tests");
+app.use("/api/tests", testsRoute);
+
 module.exports = app;
