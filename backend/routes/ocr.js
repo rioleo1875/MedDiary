@@ -2,18 +2,19 @@ const express = require("express");
 const multer = require("multer");
 const tesseract = require("tesseract.js");
 const router = express.Router();
+const parseLabReport = require("../services/parseLabReport");
 
 const upload = multer({ dest: "uploads/" });
-
-router.post("/scan", upload.single("report"), async (req, res) => {
+router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
+    const memberId = req.params.memberId;
     try {
         const result = await tesseract.recognize(req.file.path, "eng");
         const text = result.data.text;
-        res.json({ extractedText:text });
-
+        await parseLabReport(text, memberId);
+        res.json({ message: "Lab report processed successfully", extractedText: text });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Failed to process image" });
+        res.status(500).json({ error: "Lab report processing failed" });
     }
 });
 
