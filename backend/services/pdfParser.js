@@ -1,16 +1,17 @@
 global.DOMMatrix = require("@thednp/dommatrix");
-
-const pdf = require("pdf-parse");
+const pdfParseImport = require("pdf-parse");
+const pdfParse = pdfParseImport.default || pdfParseImport;
 const fs = require("fs");
 
 async function extractPDFText(filePath) {
   try {
+
     const dataBuffer = fs.readFileSync(filePath);
-    const data = await pdf(dataBuffer);
+
+    const data = await pdfParse(dataBuffer);
 
     let text = data.text || "";
 
-  
     text = text
       .replace(/\r/g, "")
       .replace(/\n+/g, "\n")
@@ -24,7 +25,9 @@ async function extractPDFText(filePath) {
     return text;
 
   } catch (error) {
+
     console.error("PDF parse failed:", error);
+
     return "";
   }
 }
