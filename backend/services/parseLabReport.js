@@ -38,144 +38,95 @@ function levenshtein(a, b) {
   return matrix[b.length][a.length];
 }
 
-function matchCommonTestName(rawName) {
-  if (!rawName) return rawName;
+function scaleValueIntoRange(value, min, max) {
+  if (min == null || max == null || isNaN(value)) return value;
 
-  const denyList = new Set(["HIGH", "LOW", "NORMAL", "DIABETIC", "FASTING", "POSTPRANDIAL"]);
-  const upper = rawName.toUpperCase().trim();
-  if (denyList.has(upper)) return rawName;
+  // If it's already reasonably close to the range, keep it.
+  if (value <= max * 2) return value;
 
-  const candidates = [
-    "HDL",
-    "LDL",
-    "Hb",
-    "Hct",
-    "WBC",
-    "RBC",
-    "Platelets",
-    "Glucose",
-    "A1c",
-    "TSH",
-    "T4",
-    "T3",
-    "CRP",
-    "Creatinine",
-    "BUN",
-    "Uric Acid",
-    "Calcium",
-    "Potassium",
-    "Sodium",
-    "Chloride",
-    "Triglycerides",
-    "Cholesterol",
-    "Albumin",
-    "Ferritin",
-    "Vitamin D",
-    "TSH",
-    "Free T4",
-    "Free T3",
-    "Bilirubin",
-    "ALT",
-    "AST",
-    "GGT",
-    "ALP",
-    "Immunoglobulin",
-    "IgE",
-    "IgG",
-    "IgA",
-    "IgM",
-    "Thyroid",
-    "Hemoglobin",
-    "Hemoglobin A1c",
-    "CRP",
-    "ESR",
-    "Sodium",
-    "Potassium",
-    "Chloride",
-    "Bicarbonate",
-    "Magnesium",
-    "Phosphate",
-    "eGFR",
-  ];
+  // If the range is small (e.g. hormone values) and the parsed number is large,
+  // it's commonly an OCR decimal-missing issue: e.g. "310" should be "3.10".
+  if (max < 20 && value >= 100) {
+    const scaled100 = value / 100;
+    if (scaled100 >= min / 5 && scaled100 <= max * 5) return scaled100;
 
-  const normalized = rawName.toUpperCase();
-  let best = { score: Infinity, name: rawName };
-  for (const target of candidates) {
-    const dist = levenshtein(normalized, target.toUpperCase());
-    const norm = dist / Math.max(normalized.length, target.length);
-    if (norm < best.score) {
-      best = { score: norm, name: target };
-    }
+    const scaled1000 = value / 1000;
+    if (scaled1000 >= min / 5 && scaled1000 <= max * 5) return scaled1000;
   }
 
-  // Accept replacement for short/unclear names
-  if (best.score <= 0.5 && rawName.length <= 6) {
-    return best.name;
-  }
-  return rawName;
+  return value;
 }
 
-function isLikelyTestName(testName) {
-  if (!testName) return false;
+const TEST_NAME_CANONICAL = {
+  hdl: "HDL",
+  ldl: "LDL",
+  hba1c: "A1c",
+  hb: "Hb",
+  hct: "Hct",
+  wbc: "WBC",
+  rbc: "RBC",
+  platelets: "Platelets",
+  glucose: "Glucose",
+  a1c: "A1c",
+  tsh: "TSH",
+  t4: "T4",
+  t3: "T3",
+  crp: "CRP",
+  creatinine: "Creatinine",
+  cr: "Creatinine",
+  bun: "BUN",
+  uric: "Uric Acid",
+  calcium: "Calcium",
+  potassium: "Potassium",
+  sodium: "Sodium",
+  chloride: "Chloride",
+  triglycerides: "Triglycerides",
+  cholesterol: "Cholesterol",
+  albumin: "Albumin",
+  ferritin: "Ferritin",
+  vitamin: "Vitamin",
+  bilirubin: "Bilirubin",
+  alt: "ALT",
+  ast: "AST",
+  ggt: "GGT",
+  alp: "ALP",
+  immunoglobulin: "Immunoglobulin",
+  ige: "IgE",
+  igg: "IgG",
+  iga: "IgA",
+  igm: "IgM",
+  thyroid: "Thyroid",
+  hemoglobin: "Hemoglobin",
+  esr: "ESR",
+  egfr: "eGFR",
+  bicarbonate: "Bicarbonate",
+  magnesium: "Magnesium",
+  phosphate: "Phosphate",
+  "total cholesterol": "Total Cholesterol",
+  "ldl cholesterol": "LDL Cholesterol",
+  "hdl cholesterol": "HDL Cholesterol",
+  "hemoglobin a1c": "Hemoglobin A1c",
+  "free t4": "Free T4",
+  "free t3": "Free T3",
+};
 
-  const knownKeywords = new Set([
-    "hdl",
-    "ldl",
-    "hb",
-    "hct",
-    "wbc",
-    "rbc",
-    "platelets",
-    "glucose",
-    "a1c",
-    "tsh",
-    "t4",
-    "t3",
-    "crp",
-    "creatinine",
-    "bun",
-    "uric",
-    "calcium",
-    "potassium",
-    "sodium",
-    "chloride",
-    "triglycerides",
-    "cholesterol",
-    "albumin",
-    "ferritin",
-    "vitamin",
-    "bilirubin",
-    "alt",
-    "ast",
-    "ggt",
-    "alp",
-    "immunoglobulin",
-    "ige",
-    "igg",
-    "iga",
-    "igm",
-    "hemoglobin",
-    "thyroid",
-    "crp",
-    "esr",
-    "egfr",
-  ]);
+function extractKnownTestName(testName) {
+  if (!testName) return null;
+  const lower = testName.toLowerCase();
 
-  const words = testName
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  for (const w of words) {
-    if (knownKeywords.has(w)) return true;
-    if (/^[A-Z]{2,}$/.test(w)) return true; // e.g. TSH, RBC
-    if (/^\d+[a-zA-Z]+$/.test(w)) return true; // e.g. 25(OH)
+  // Prefer phrase matches first (multi-word terms)
+  const phrases = Object.keys(TEST_NAME_CANONICAL).filter((k) => k.includes(" "));
+  for (const phrase of phrases) {
+    if (lower.includes(phrase)) return TEST_NAME_CANONICAL[phrase];
   }
 
-  // If the name is long (>3 words) but none of the tokens look medical, reject it.
-  if (words.length > 3) return false;
+  // Then match single tokens
+  const tokens = lower.split(/\s+/);
+  for (const token of tokens) {
+    if (TEST_NAME_CANONICAL[token]) return TEST_NAME_CANONICAL[token];
+  }
 
-  return true;
+  return null;
 }
 
 function isLikelyTestLine(testName, hasUnit, hasRange) {
@@ -202,22 +153,27 @@ function isLikelyTestLine(testName, hasUnit, hasRange) {
     .split(/\s+/)
     .filter(Boolean);
 
-  // If the name is too short and we don't have a unit/range, it's likely not a test line
-  if (!hasUnit && !hasRange && words.length <= 1) {
-    const token = words[0] || "";
-    if (!token || ignoreWords.has(token)) return false;
-  }
-
-  // Disallow common header keywords as the only word
+  // If it’s too generic (e.g., “High”), skip it.
   if (words.length === 1 && ignoreWords.has(words[0])) return false;
 
-  // If unit/range is not present, require a known medical keyword
-  if (!hasUnit && !hasRange && !isLikelyTestName(testName)) return false;
+  // If the line doesn’t have a unit/range, require a known test keyword.
+  if (!hasUnit && !hasRange) {
+    const found = extractKnownTestName(testName);
+    return Boolean(found);
+  }
 
-  // If it contains too many short tokens, reject it (likely OCR garbage)
-  if (words.length > 4 && words.filter((w) => w.length <= 1).length > 1) return false;
+  // If the line has a unit/range, accept it even if the test name isn't in the known list,
+  // because many lab PDFs use short abbreviations (e.g., "Na", "K", "T4").
+  // Still, prefer canonical test names when possible.
+  const found = extractKnownTestName(testName);
+  if (found) return true;
 
-  return true;
+  // Permit unknown test names if we detected a unit/range, but reject very generic words.
+  if (hasUnit || hasRange) {
+    return words.length > 0 && !ignoreWords.has(words[0]);
+  }
+
+  return false;
 }
 
 function parseLine(line) {
@@ -245,13 +201,70 @@ function parseLine(line) {
     return null;
   }
 
-  // Find test value (first number in line)
-  const valueMatch = line.match(/\b(\d+\.?\d*)\b/);
+  // Find all numeric tokens (including < or >)
+  const numberMatches = Array.from(line.matchAll(/([<>]?\d+(?:\.\d+)?)/g));
+  if (!numberMatches.length) return null;
+
+  const rangeMatch = line.match(/([<>]?\d+(?:\.\d+)?)(?:\s*[-–]\s*([<>]?\d+(?:\.\d+)?))/);
+  const rangeStartIndex = rangeMatch ? rangeMatch.index : -1;
+
+  const unitMatch = line.match(/\b(mg\/dl|g\/dl|mmol\/l|u\/ml|ng\/ml|pg\/ml|%|µg\/l|ng\/dl|mmol\/l|u\/l|iu\/l)\b/i);
+  const unitIndex = unitMatch ? unitMatch.index : -1;
+  const unit = unitMatch ? unitMatch[1] : null;
+
+  const isLikelyNonValue = (match) => {
+    const valueStr = match[1];
+    const idx = match.index;
+    if (idx == null) return false;
+
+    // ignore years (e.g., 2023)
+    const num = parseFloat(valueStr.replace(/[<>]/g, ""));
+    if (num >= 1900 && num <= 2100) return true;
+
+    // ignore page numbers (page 1, pg 2)
+    const before = line.slice(Math.max(0, idx - 10), idx).toLowerCase();
+    if (/\b(pg|page|p)\s*$/.test(before)) return true;
+
+    // ignore "no." or "n°" patterns
+    if (/\b(no|n)\s*$/.test(before)) return true;
+
+    return false;
+  };
+
+  const findValueBefore = (boundaryIndex) => {
+    for (let i = numberMatches.length - 1; i >= 0; i--) {
+      const match = numberMatches[i];
+      if (match.index == null) continue;
+      if (match.index >= boundaryIndex) continue;
+      if (isLikelyNonValue(match)) continue;
+      return match;
+    }
+    return null;
+  };
+
+  let valueMatch = null;
+
+  // Prefer the number immediately before the unit if available
+  if (unitIndex >= 0) {
+    valueMatch = findValueBefore(unitIndex);
+  }
+
+  // Otherwise prefer the number before the range
+  if (!valueMatch && rangeStartIndex >= 0) {
+    valueMatch = findValueBefore(rangeStartIndex);
+  }
+
+  // Otherwise fall back to first numeric token that doesn't look like a date/page
+  if (!valueMatch) {
+    valueMatch = numberMatches.find((m) => !isLikelyNonValue(m));
+  }
+
   if (!valueMatch) return null;
 
-  const value = parseFloat(valueMatch[1]);
+  let value = parseFloat(valueMatch[1].replace(/[<>]/g, ""));
+  if (isNaN(value)) return null;
 
-  // Extract test name (text before value)
+  // Extract test name (text before the chosen value)
   let testName = line.slice(0, valueMatch.index).trim();
 
   // Clean OCR garbage
@@ -260,9 +273,26 @@ function parseLine(line) {
     .replace(/[^a-zA-Z0-9\s]/g, "")
     .trim();
 
+  // If the value appears at the start of the line, the test name may come after it.
+  if ((!testName || testName.length < 2) && valueMatch.index === 0) {
+    const afterValue = line.slice(valueMatch.index + valueMatch[0].length).trim();
+    const altName = afterValue
+      .replace(/^[^a-zA-Z]*/g, "")
+      .replace(/[^a-zA-Z0-9\s]/g, "")
+      .trim();
+
+    if (altName && altName.length >= 2) {
+      testName = altName;
+    }
+  }
+
   if (!testName || testName.length < 2) return null;
 
-  testName = matchCommonTestName(testName);
+  // Prefer known medical test keywords (strict matching)
+  const detectedKeyword = extractKnownTestName(testName);
+  if (detectedKeyword) {
+    testName = detectedKeyword;
+  }
 
   // Detect reference range if present
   //  - standard ranges: 70 - 110
@@ -306,13 +336,8 @@ function parseLine(line) {
     }
   }
 
-  // Detect unit (common clinical units)
-  let unit = null;
-  const unitMatch = line.match(/\b(mg\/dl|g\/dl|mmol\/l|u\/ml|ng\/ml|pg\/ml|%|µg\/l|ng\/dl|mmol\/l|u\/l|iu\/l)\b/i);
-
-  if (unitMatch) {
-    unit = unitMatch[1];
-  }
+  // If the value is clearly outside the range, attempt to fix it by scaling.
+  value = scaleValueIntoRange(value, min, max);
 
   // Determine if this looks like a valid test line
   const isValid = isLikelyTestLine(testName, Boolean(unit), Boolean(min !== null || max !== null));
@@ -335,6 +360,7 @@ module.exports = async function parseLabReport(text, memberId) {
 
   text = text || "";
   const lines = text.split("\n");
+  const inserted = [];
 
   for (let line of lines) {
     const parsed = parseLine(line);
@@ -360,5 +386,12 @@ module.exports = async function parseLabReport(text, memberId) {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [memberId, testName, value, unit, min, max, status, testDate]
     );
+
+    inserted.push({ testName, value, unit, min, max, status, testDate });
   }
+
+  return {
+    insertedCount: inserted.length,
+    inserted,
+  };
 };
