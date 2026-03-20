@@ -31,7 +31,8 @@ export default function HomeScreen() {
         <View style={styles.topSpacer} />
 
         {/* App Header */}
-        <View style={styles.header}>
+        <View style={styles.headerRow}>
+          <View>
           <Text style={styles.appName}>
             <Text style={styles.med}>Med</Text>
             <Text style={styles.diary}>Diary</Text>
@@ -39,6 +40,11 @@ export default function HomeScreen() {
           <Text style={styles.tagline}>
             Your family medical records, in one place
           </Text>
+        </View>
+
+        <TouchableOpacity onPress={() => router.replace("/auth/login" as any)}>
+          <Ionicons name="log-out-outline" size={24} color="#e63946" />
+        </TouchableOpacity>
         </View>
 
         {/* Medical ID */}
@@ -322,6 +328,19 @@ const styles = StyleSheet.create({
 
     elevation: 6,
   },
+
+  headerRow: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: 22,
+},
+
+logout: {
+  color: "#e63946",
+  fontWeight: "600",
+  fontSize: 14,
+},
 
   
 });

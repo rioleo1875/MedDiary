@@ -67,8 +67,9 @@ export default function MedicalSummary() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f7fb",
-    padding: 20,
+    backgroundColor: "#eaf6ff",
+    paddingHorizontal: 20,
+    paddingTop: 40,
   },
 
   title: {
