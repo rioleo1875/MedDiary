@@ -4,11 +4,11 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-nativ
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
 
   const handleLogin = () => {
-    if (phone.length < 10) {
-      alert("Enter valid phone number");
+    if (!email || !email.includes("@")) {
+      alert("Enter valid email address");
       return;
     }
 
@@ -33,11 +33,12 @@ export default function LoginScreen() {
       {/* Input Section */}
       <View style={styles.inputSection}>
         <TextInput
-          placeholder="Phone"
+          placeholder="Email"
           placeholderTextColor="#9ca3af"
-          keyboardType="phone-pad"
-          value={phone}
-          onChangeText={setPhone}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
           style={styles.input}
         />
 

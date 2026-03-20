@@ -41,9 +41,11 @@ export default function EmergencyProfile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f7fb",
-    padding: 20,
+    backgroundColor: "#eaf6ff",
+    paddingHorizontal: 20,
+    paddingTop: 40,
   },
+
   title: {
     fontSize: 22,
     fontWeight: "bold",
@@ -54,8 +56,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 15,
-    marginBottom: 15,
-    elevation: 2,
+    marginBottom: 30,
+    elevation: 5,
   },
   sectionTitle: {
     fontSize: 15,

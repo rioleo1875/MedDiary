@@ -41,7 +41,7 @@ export default function OtpScreen() {
       <View style={styles.inputSection}>
 
         <Text style={styles.subtitle}>
-          Enter the verification code sent to your phone
+          Enter the verification code sent to your email
         </Text>
 
         <TouchableOpacity
