@@ -2,7 +2,7 @@ module.exports = {
 
   // BLOOD SUGAR
   fbs: {
-    aliases: ["fbs", "fasting blood sugar", "fasting glucose", "glucose", "blood sugar", "sugar"],
+    aliases: ["fbs", "fasting blood sugar", "fasting glucose", "glucose", "blood sugar", "sugar", "glucose, fasting(f)", "fasting"],
     normal_min: 70,
     normal_max: 100
   },

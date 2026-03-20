@@ -6,8 +6,42 @@ const fs = require("fs");
 const parseLabReport = require("../services/parseLabReport");
 const extractPDFText = require("../services/pdfParser");
 const convertPDFToImages = require("../services/pdfToImage");
+const testDictionary = require("../services/testDictionary");
 
 const router = express.Router();
+
+function normalizeText(raw) {
+  return raw
+    .toLowerCase()
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/[^a-z0-9 ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasKnownTestAlias(text) {
+  const normalized = normalizeText(text);
+  return Object.values(testDictionary).some((entry) => {
+    const aliases = entry.aliases || [];
+    return aliases.some((alias) => normalized.includes(alias.toLowerCase()));
+  });
+}
+
+function shouldFallbackToOCR(text) {
+  if (!text || !text.trim()) return true;
+
+  const wordCount = text.trim().split(/\s+/).length;
+  const significant = text.trim().length >= 20;
+  const knownTest = hasKnownTestAlias(text);
+
+  if (!significant) return true;
+  if (knownTest) return false;
+
+  
+  if (wordCount < 20) return true;
+
+  return false;
+}
 
 const upload = multer({ dest: "uploads/" });
 
@@ -38,7 +72,7 @@ router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
         console.log("PDF parser failed");
       }
 
-      if (!text || text.trim().length < 20) {
+      if (shouldFallbackToOCR(text)) {
 
         console.log("Switching to OCR fallback");
 
@@ -58,6 +92,8 @@ router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
 
         text = pages.join("\n");
 
+      } else {
+        console.log("Using parsed PDF text, skipping OCR fallback");
       }
 
     } else {
