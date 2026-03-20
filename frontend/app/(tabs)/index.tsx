@@ -1,3 +1,4 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import {
   Image,
@@ -18,110 +19,123 @@ export default function HomeScreen() {
   ];
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Top Spacer (breathing space) */}
-      <View style={styles.topSpacer} />
+    <View style={{ flex: 1 }}>
 
-      {/* App Header */}
-      <View style={styles.header}>
-        <Text style={styles.appName}>
-          <Text style={styles.med}>Med</Text>
-          <Text style={styles.diary}>Diary</Text>
-        </Text>
-        <Text style={styles.tagline}>
-          Your family medical records, in one place
-        </Text>
-      </View>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
 
-      {/* Medical ID Card */}
-      <View style={styles.card}>
-        <Image source={Images.avatar} style={styles.avatar} />
+        {/* Top Spacer */}
+        <View style={styles.topSpacer} />
 
-        <View style={{ flex: 1 }}>
-          <Text style={styles.name}>Archana A</Text>
-          <Text style={styles.info}>Blood Group: A+</Text>
-          <Text style={styles.info}>Age: 21</Text>
-          <Text style={styles.info}>Emergency Contact: Ajeesh A</Text>
+        {/* App Header */}
+        <View style={styles.header}>
+          <Text style={styles.appName}>
+            <Text style={styles.med}>Med</Text>
+            <Text style={styles.diary}>Diary</Text>
+          </Text>
+          <Text style={styles.tagline}>
+            Your family medical records, in one place
+          </Text>
         </View>
-      </View>
 
-      {/* Quick Access Grid */}
-      <View style={styles.grid}>
-        {[
-          { label: "Family", route: "family" },
-          { label: "Medications", route: "medications" },
-          { label: "Test Results", route: "tests" },
-          { label: "Immunizations", route: "immunizations" },
-        ].map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.tile}
-            onPress={() => router.push(`/(tabs)/${item.route}` as any)}
-          >
-            <Text style={styles.tileText}>{item.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+        {/* Medical ID */}
+        <Text style={styles.sectionTitle}>Medical ID</Text>
 
-      {/* Recent Activity */}
-      <View style={styles.activityContainer}>
-        <Text style={styles.sectionTitle}>Recent Activity</Text>
+        <View style={styles.card}>
+          <Image source={Images.avatar} style={styles.avatar} />
 
-        {activities.map((item) => (
-          <View key={item.id} style={styles.activityItem}>
-            <View>
-              <Text style={styles.activityType}>{item.type}</Text>
-              <Text style={styles.activityText}>{item.text}</Text>
-            </View>
-            <Text style={styles.activityDate}>{item.date}</Text>
+          <View style={{ flex: 1, justifyContent: "center" }}>
+            <Text style={styles.name}>Archana A</Text>
+            <Text style={styles.info}>Blood Group: A+</Text>
+            <Text style={styles.info}>Age: 21</Text>
+            <Text style={styles.info}>Emergency Contact: Ajeesh A</Text>
           </View>
-        ))}
-      </View>
+        </View>
 
-      {/* Emergency Access */}
-      <TouchableOpacity
-        style={styles.emergencyBar}
-        onPress={() => router.push("/(tabs)/emergency")}
-      >
-        <Text style={styles.emergencyText}>Emergency Access</Text>
-        <Text style={styles.emergencySub}>View Emergency Profile</Text>
-      </TouchableOpacity>
+        {/* Quick Access Grid */}
+        <View style={styles.grid}>
+          {[
+            { label: "Family", route: "family" },
+            { label: "Medications", route: "medications" },
+            { label: "Test Results", route: "tests" },
+            { label: "Immunizations", route: "immunizations" },
+          ].map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.tile}
+              onPress={() => router.push(`/(tabs)/${item.route}` as any)}
+            >
+              <Text style={styles.tileText}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      {/* Generate Medical Summary */}
+        {/* Recent Activity */}
+        <View style={styles.activityContainer}>
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+
+          {activities.map((item) => (
+            <View key={item.id} style={styles.activityItem}>
+              <View>
+                <Text style={styles.activityType}>{item.type}</Text>
+                <Text style={styles.activityText}>{item.text}</Text>
+              </View>
+              <Text style={styles.activityDate}>{item.date}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Emergency Access */}
+        <TouchableOpacity
+          style={styles.emergencyBar}
+          onPress={() => router.push("/(tabs)/emergency")}
+        >
+          <Text style={styles.emergencyText}>Emergency Access</Text>
+          <Text style={styles.emergencySub}>View Emergency Profile</Text>
+        </TouchableOpacity>
+
+        {/* Generate Medical Summary */}
+        <TouchableOpacity
+          style={styles.summaryBar}
+          onPress={() => router.push("/(tabs)/summary")}
+        >
+          <Text style={styles.summaryText}>Generate Medical Summary</Text>
+          <Text style={styles.summarySub}>
+            View consolidated medical information
+          </Text>
+        </TouchableOpacity>
+
+      </ScrollView>
+
+      {/* Floating Chatbot Button */}
       <TouchableOpacity
-        style={styles.summaryBar}
-        onPress={() => router.push("/(tabs)/summary")}
-      >
-        <Text style={styles.summaryText}>Generate Medical Summary</Text>
-        <Text style={styles.summarySub}>
-          View consolidated medical information
-        </Text>
-      </TouchableOpacity>
-    </ScrollView>
+  style={styles.chatBubble}
+  onPress={() => router.push("../(tabs)/chatbot")}
+>
+  <Ionicons name="chatbubbles-sharp" size={28} color="#29A9F8"/>
+</TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f7fb",
+    backgroundColor: "#eaf6ff",
+    padding: 20,
   },
 
   content: {
-    padding: 16,
     paddingBottom: 28,
   },
 
-  /* Top spacing */
   topSpacer: {
     height: 24,
   },
 
-  /* Header */
   header: {
     marginBottom: 22,
   },
@@ -145,26 +159,44 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
 
-  /* Medical Card */
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 10,
+    color: "#1f2937",
+  },
+
   card: {
     backgroundColor: "#ffffff",
-    borderRadius: 12,
-    padding: 15,
+    borderRadius: 18,
+    padding: 18,
     flexDirection: "row",
     alignItems: "center",
-    elevation: 3,
+    marginBottom: 22,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+
+    elevation: 4,
+
+    borderLeftWidth: 6,
+    borderLeftColor: "#29A9F8",
   },
 
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 15,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginRight: 16,
+    borderWidth: 2,
+    borderColor: "#eaf6ff",
   },
 
   name: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 19,
+    fontWeight: "700",
     color: "#1f2937",
   },
 
@@ -174,7 +206,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  /* Grid */
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -183,13 +214,13 @@ const styles = StyleSheet.create({
   },
 
   tile: {
-    width: "48%",
+    width: "47%",
     backgroundColor: "#ffffff",
     padding: 20,
-    borderRadius: 12,
-    marginBottom: 15,
+    borderRadius: 14,
+    marginBottom: 16,
     alignItems: "center",
-    elevation: 2,
+    elevation: 3,
   },
 
   tileText: {
@@ -198,19 +229,18 @@ const styles = StyleSheet.create({
     color: "#1f2937",
   },
 
-  /* Activity */
   activityContainer: {
     backgroundColor: "#ffffff",
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 15,
     marginTop: 10,
-  },
 
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "#1f2937",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+
+    elevation: 4,
   },
 
   activityItem: {
@@ -235,7 +265,6 @@ const styles = StyleSheet.create({
     color: "#6b7280",
   },
 
-  /* Emergency */
   emergencyBar: {
     backgroundColor: "#e63946",
     borderRadius: 12,
@@ -255,7 +284,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  /* Summary */
   summaryBar: {
     backgroundColor: "#29A9F8",
     borderRadius: 12,
@@ -275,4 +303,25 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 13,
   },
+
+  chatBubble: {
+    position: "absolute",
+    bottom: 30,
+    right: 20,
+    backgroundColor: "#ffffff",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+
+    elevation: 6,
+  },
+
+  
 });
