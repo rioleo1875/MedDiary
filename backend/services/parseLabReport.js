@@ -7,20 +7,13 @@ function debug(...args) {
 }
 
 function normalizeNumberString(numStr) {
-  // Strip whitespace inside the number (e.g. "1 234" -> "1234")
   numStr = numStr.replace(/\s+/g, "");
-
-  // Handle comma/decimal formatting (e.g. "1,234.56" or "1.234,56").
   const hasComma = numStr.includes(",");
   const hasDot = numStr.includes(".");
-
   if (hasComma && hasDot) {
-    // Assume the last separator is decimal
     if (numStr.lastIndexOf(",") > numStr.lastIndexOf(".")) {
-      // European style: 1.234,56
       numStr = numStr.replace(/\./g, "").replace(/,/g, ".");
     } else {
-      // US style: 1,234.56
       numStr = numStr.replace(/,/g, "");
     }
   } else if (hasComma) {
@@ -31,7 +24,6 @@ function normalizeNumberString(numStr) {
       numStr = numStr.replace(/,/g, "");
     }
   }
-
   return parseFloat(numStr);
 }
 
@@ -42,7 +34,6 @@ function cleanForFuzzy(s) {
 function levenshtein(a, b) {
   const dp = Array.from({ length: a.length + 1 }, (_, i) => [i]);
   for (let j = 1; j <= b.length; j++) dp[0][j] = j;
-
   for (let i = 1; i <= a.length; i++) {
     for (let j = 1; j <= b.length; j++) {
       dp[i][j] = Math.min(
@@ -52,27 +43,19 @@ function levenshtein(a, b) {
       );
     }
   }
-
   return dp[a.length][b.length];
 }
 
 function fuzzyIndexOf(cleanLine, cleanAlias) {
   const windowSize = Math.max(1, cleanAlias.length);
   let best = { index: -1, dist: Infinity };
-
   for (let i = 0; i + windowSize <= cleanLine.length; i++) {
     const sub = cleanLine.slice(i, i + windowSize);
     const dist = levenshtein(sub, cleanAlias);
     if (dist < best.dist) best = { index: i, dist };
   }
-
   if (best.index === -1) return -1;
-
-  // For short aliases, require exact match to avoid collisions (e.g., "rbs" vs "fbs").
-  if (cleanAlias.length <= 3) {
-    return best.dist === 0 ? best.index : -1;
-  }
-
+  if (cleanAlias.length <= 3) return best.dist === 0 ? best.index : -1;
   const threshold = Math.max(1, Math.floor(cleanAlias.length * 0.15));
   return best.dist <= threshold ? best.index : -1;
 }
@@ -81,43 +64,48 @@ function aliasInLine(line, alias) {
   const cleanLine = cleanForFuzzy(line);
   const cleanAlias = cleanForFuzzy(alias);
   const aliasIndex = fuzzyIndexOf(cleanLine, cleanAlias);
-
   if (aliasIndex < 0) {
-    debug(`aliasInLine: no match for "${alias}" (clean="${cleanAlias}") in "${line.trim()}"`);
+    debug(`aliasInLine: no match for "${alias}" in "${line.trim()}"`);
     return false;
   }
-
   const aliasLen = cleanAlias.length;
   const isLetter = (ch) => /[a-z]/.test(ch);
   const prev = cleanLine[aliasIndex - 1];
   const next = cleanLine[aliasIndex + aliasLen];
-
-  // Allow aliases to be preceded/followed by digits or punctuation (common in OCR output),
-  // but avoid matching inside larger words.
   const startOk = aliasIndex === 0 || !isLetter(prev);
-  const endOk =
-    aliasIndex + aliasLen === cleanLine.length ||
-    !isLetter(next);
-
-  // Treat aliases as whole words so a small code (e.g., "ast") doesn't match inside "fasting".
+  const endOk = aliasIndex + aliasLen === cleanLine.length || !isLetter(next);
   if (!(startOk && endOk)) {
-    // Allow some short codes (t3/t4) to match without strict boundaries.
     const ok = aliasLen <= 2;
-    debug(
-      `aliasInLine: boundary mismatch for "${alias}" (index=${aliasIndex}, len=${aliasLen}) in "${line.trim()}" -> okShort=${ok}`
-    );
+    debug(`aliasInLine: boundary mismatch for "${alias}" -> okShort=${ok}`);
     return ok;
   }
-
-  debug(`aliasInLine: matched "${alias}" (clean="${cleanAlias}") in "${line.trim()}"`);
+  debug(`aliasInLine: matched "${alias}" in "${line.trim()}"`);
   return true;
 }
 
-function extractValueAndUnit(line, alias, min, max) {
-  // Normalize common grouping spaces (e.g. "1 520" -> "1520") without affecting ranges like "70 - 100".
-  const normalizedLine = line.replace(/(\d)\s(?=\d{3}\b)/g, "$1");
+function extractValueAndUnit(rawLine, alias, min, max) {
 
-  // Match numbers that are not part of a surrounding word (e.g., avoid matching the "3" in "T3").
+  let line = rawLine
+    .replace(/([a-z]{2,})(\d)/gi, "$1 $2")   // "non" before digit → "non 3"
+    .replace(/(\d)([a-z]{2,})/gi, "$1 $2");  // digit before "adults" → "5 adults"
+
+
+  const cleanAlias = alias.replace(/[^a-z0-9]/gi, "").toLowerCase();
+  const lineAlphaNum = line.replace(/[^a-z0-9]/gi, "").toLowerCase();
+  if (cleanAlias.length > 0 && lineAlphaNum.startsWith(cleanAlias)) {
+    // Walk through the line consuming exactly cleanAlias.length alphanumeric chars.
+    let ai = 0;
+    let li = 0;
+    const lowerLine = line.toLowerCase();
+    while (ai < cleanAlias.length && li < lowerLine.length) {
+      if (/[a-z0-9]/i.test(lowerLine[li])) ai++;
+      li++;
+    }
+    line = line.slice(li);
+  }
+
+
+  const normalizedLine = line.replace(/(\d)\s(?=\d{3}\b)/g, "$1");
   const regex = /(?<![A-Za-z0-9_])([0-9][0-9\.,]*)/g;
   let match;
   const candidates = [];
@@ -125,44 +113,47 @@ function extractValueAndUnit(line, alias, min, max) {
   while ((match = regex.exec(normalizedLine)) !== null) {
     const raw = match[1];
     const index = match.index;
-    const endIndex = index + raw.length;
 
-    // Skip numbers that are likely part of a range (e.g., "70 - 100")
-    const after = normalizedLine.slice(endIndex, endIndex + 2);
-    const before = normalizedLine.slice(Math.max(0, index - 2), index);
-    if (after.includes("-") || before.includes("-")) continue;
+    
+    const rangePattern = /\d[\d\.,]*\s*[-–]\s*\d[\d\.,]*/g;
+    let isRangePart = false;
+    let rMatch;
+    while ((rMatch = rangePattern.exec(normalizedLine)) !== null) {
+      if (index >= rMatch.index && index < rMatch.index + rMatch[0].length) {
+        isRangePart = true;
+        break;
+      }
+    }
+    if (isRangePart) {
+      debug(`extractValueAndUnit: skipping "${raw}" — part of reference range`);
+      continue;
+    }
 
     candidates.push({ raw, index });
   }
 
   if (!candidates.length) {
-    debug(`extractValueAndUnit: no number candidates found in "${line.trim()}"`);
+    debug(`extractValueAndUnit: no number candidates in "${rawLine.trim()}"`);
     return null;
   }
 
-  // Parse numeric candidates for the line.
   const parsedCandidates = candidates
-    .map((c) => {
-      const value = normalizeNumberString(c.raw);
-      return { ...c, value };
-    })
+    .map((c) => ({ ...c, value: normalizeNumberString(c.raw) }))
     .filter((c) => !Number.isNaN(c.value));
 
   if (!parsedCandidates.length) {
-    debug(`extractValueAndUnit: no parsable numbers in "${line.trim()}"`);
+    debug(`extractValueAndUnit: no parsable numbers in "${rawLine.trim()}"`);
     return null;
   }
 
-  // Ignore leading numeric tokens that are likely table row numbers or bullet points.
-  const firstLetterMatch = normalizedLine.match(/[A-Za-z]/);
-  if (firstLetterMatch) {
-    const firstLetterIndex = firstLetterMatch.index;
-    if (firstLetterIndex > 0) {
-      const filtered = parsedCandidates.filter((c) => c.index >= firstLetterIndex);
+ 
+  const lineStartsWithNumber = /^\s*\d/.test(normalizedLine);
+  if (!lineStartsWithNumber) {
+    const firstLetterMatch = normalizedLine.match(/[A-Za-z]/);
+    if (firstLetterMatch && firstLetterMatch.index > 0) {
+      const filtered = parsedCandidates.filter((c) => c.index >= firstLetterMatch.index);
       if (filtered.length) {
-        debug(
-          `extractValueAndUnit: dropping ${parsedCandidates.length - filtered.length} leading numeric candidate(s) before first letter`
-        );
+        debug(`extractValueAndUnit: dropping ${parsedCandidates.length - filtered.length} leading number(s)`);
         parsedCandidates.length = 0;
         parsedCandidates.push(...filtered);
       }
@@ -170,94 +161,116 @@ function extractValueAndUnit(line, alias, min, max) {
   }
 
   if (!parsedCandidates.length) {
-    debug(`extractValueAndUnit: no candidates after removing leading numbers in "${line.trim()}"`);
+    debug(`extractValueAndUnit: no candidates after filter in "${rawLine.trim()}"`);
     return null;
   }
 
-  debug(`extractValueAndUnit: candidates=${parsedCandidates.map((c) => c.value).join(",")} in "${line.trim()}"`);
+  debug(`extractValueAndUnit: candidates=${parsedCandidates.map((c) => c.value)} in "${rawLine.trim()}"`);
 
-  // Prefer a candidate whose value falls within the expected range (if provided).
+  
   let bestCandidates = parsedCandidates;
-  let inRange = parsedCandidates;
   if (min != null && max != null) {
-    inRange = parsedCandidates.filter((c) => c.value >= min && c.value <= max);
+    const inRange = parsedCandidates.filter((c) => c.value >= min && c.value <= max);
     if (inRange.length) {
       bestCandidates = inRange;
-      debug(`extractValueAndUnit: using in-range candidates ${inRange.map((c) => c.value).join(",")} for expected range ${min}-${max}`);
+      debug(`extractValueAndUnit: using in-range candidates ${inRange.map((c) => c.value)}`);
     }
-
-    // If the line looks like a reference range (e.g. "70 - 100") and we didn't find any
-    // values within the expected range, don't treat the first number as the test result.
-    const hasRange = /\d\s*-\s*\d/.test(normalizedLine);
-    if (hasRange && inRange.length === 0) {
-      debug(`extractValueAndUnit: line appears to contain a reference range and no in-range values; skipping: "${line.trim()}"`);
+    
+    const hasRange = /\d\s*[-–]\s*\d/.test(normalizedLine);
+    if (hasRange && !inRange.length) {
+      debug(`extractValueAndUnit: reference range line with no in-range value; skipping`);
       return null;
     }
   }
 
-  // Prefer the first candidate (usually the result number), after filtering.
   const chosen = bestCandidates[0];
   const value = chosen.value;
 
-  // Try to fix common OCR decimal-loss issues (e.g. 7050 should be 70.50)
   if (min != null && max != null && value > max * 3) {
     for (const divisor of [1000, 100, 10]) {
       const attempt = value / divisor;
       if (attempt >= min && attempt <= max) {
-        debug(
-          `extractValueAndUnit: corrected ${value} -> ${attempt} using divisor ${divisor} for range ${min}-${max}`
-        );
+        debug(`extractValueAndUnit: corrected ${value} -> ${attempt} (÷${divisor})`);
         return { value: attempt, unit: null };
       }
     }
   }
 
-  const unitMatch = line.match(/(mg\/?dl|mmol\/?l|g\/?dl|µmol\/?l|umol\/?l)/i);
+  const unitMatch = rawLine.match(/(mg\/?dl|mmol\/?l|g\/?dl|µmol\/?l|umol\/?l)/i);
   const unit = unitMatch ? unitMatch[0].toLowerCase() : null;
 
   return { value, unit };
 }
 
 function classify(value, min, max) {
-
   if (min == null || max == null) return "unknown";
-
   if (value >= min && value <= max) return "normal";
-
   const range = max - min;
   const diff = value < min ? min - value : value - max;
-
   if (diff / range <= 0.2) return "moderate";
-
   return "abnormal";
+}
+
+const aliasToTestName = {};
+for (const [testName, entry] of Object.entries(testDictionary)) {
+  for (const a of [testName, ...(entry.aliases || [])]) {
+    aliasToTestName[a.toLowerCase()] = testName;
+  }
 }
 
 module.exports = async function parseLabReport(text, memberId) {
   const lines = text.split("\n");
-
-  const testDate = new Date().toISOString().slice(0,10);
+  const testDate = new Date().toISOString().slice(0, 10);
 
   const findValueInLines = (startIndex, alias, min, max) => {
-    // Try the current line first, then a small window of subsequent lines.
-    for (let offset = 0; offset < 3; offset++) {
+    for (let offset = 0; offset <= 2; offset++) {
       const idx = startIndex + offset;
       if (idx >= lines.length) break;
 
       const candidateLine = lines[idx].toLowerCase();
+
+      if (offset > 0) {
+        const isOtherTest = Object.entries(testDictionary).some(([tName, entry]) => {
+          if (tName === aliasToTestName[alias]) return false;
+          return [tName, ...(entry.aliases || [])].some((a) =>
+            aliasInLine(candidateLine, a.toLowerCase())
+          );
+        });
+        if (isOtherTest) {
+          debug(`findValueInLines: line ${idx + 1} is another test, stopping for "${alias}"`);
+          break;
+        }
+      }
+
       const extracted = extractValueAndUnit(candidateLine, alias, min, max);
-      if (extracted) return extracted;
+      if (extracted) {
+        debug(`findValueInLines: value found on line ${idx + 1} (offset +${offset})`);
+        return extracted;
+      }
+
+      // On lookahead lines: if this line had digits but yielded no result, stop.
+      if (offset > 0 && /\d/.test(candidateLine)) {
+        debug(`findValueInLines: line ${idx + 1} has digits but no result; stopping`);
+        break;
+      }
     }
     return null;
   };
 
+  // Track processed tests to prevent duplicate DB writes.
+  const seen = new Set();
+
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
-
     if (DEBUG) debug(`line ${i + 1}: "${rawLine}"`);
 
+    // aliasInLine uses cleanForFuzzy which strips all punctuation/spaces, so it
+    // handles jammed columns like "T395.6Non-Pregnant" without pre-normalization.
     const line = rawLine.toLowerCase();
 
     for (const [testName, entry] of Object.entries(testDictionary)) {
+      if (seen.has(testName)) continue;
+
       const aliases = [testName, ...(entry.aliases || [])];
       const min = entry.normal_min;
       const max = entry.normal_max;
@@ -270,16 +283,18 @@ module.exports = async function parseLabReport(text, memberId) {
 
         const extracted = findValueInLines(i, lowerAlias, min, max);
         if (!extracted) {
-          debug(`no value extracted for alias "${alias}" (test=${testName}) on line ${i + 1}`);
+          debug(`no value extracted for "${alias}" (test=${testName}) on line ${i + 1}`);
           continue;
         }
 
         const { value, unit } = extracted;
         const status = classify(value, min, max);
 
-        // If a result already exists for this member/date/test, update it instead of inserting a duplicate.
+        seen.add(testName);
+
         const [existing] = await db.query(
-          `SELECT test_id FROM test_results WHERE member_id = ? AND test_name = ? AND test_date = ? LIMIT 1`,
+          `SELECT test_id FROM test_results
+           WHERE member_id = ? AND test_name = ? AND test_date = ? LIMIT 1`,
           [memberId, testName, testDate]
         );
 
@@ -293,17 +308,14 @@ module.exports = async function parseLabReport(text, memberId) {
         } else {
           await db.query(
             `INSERT INTO test_results
-            (member_id, test_name, value, unit, normal_min, normal_max, status, test_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+             (member_id, test_name, value, unit, normal_min, normal_max, status, test_date)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [memberId, testName, value, unit, min, max, status, testDate]
           );
         }
 
         break;
       }
-
     }
-
   }
-
 };
