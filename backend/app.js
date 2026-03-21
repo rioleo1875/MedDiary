@@ -40,4 +40,8 @@ app.use("/api/summary", summaryRoute);
 const emergencyRoute = require("./routes/emergency");
 app.use("/api/emergency", emergencyRoute);
 
+// Family member route
+const familyRoute = require("./routes/family");
+app.use("/api/family", familyRoute);
+
 module.exports = app;
