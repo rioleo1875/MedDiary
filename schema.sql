@@ -37,6 +37,15 @@ CREATE TABLE `ddi_history` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Dumping data for table `ddi_history`
+--
+
+LOCK TABLES `ddi_history` WRITE;
+/*!40000 ALTER TABLE `ddi_history` DISABLE KEYS */;
+/*!40000 ALTER TABLE `ddi_history` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `emergency_contacts`
 --
 
@@ -48,11 +57,21 @@ CREATE TABLE `emergency_contacts` (
   `user_id` int NOT NULL,
   `emergency_phone` varchar(15) NOT NULL,
   `relationship` varchar(50) DEFAULT NULL,
+  `contact_email` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`contact_id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `emergency_contacts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `emergency_contacts`
+--
+
+LOCK TABLES `emergency_contacts` WRITE;
+/*!40000 ALTER TABLE `emergency_contacts` DISABLE KEYS */;
+/*!40000 ALTER TABLE `emergency_contacts` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `family_members`
@@ -72,8 +91,18 @@ CREATE TABLE `family_members` (
   PRIMARY KEY (`member_id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `family_members_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `family_members`
+--
+
+LOCK TABLES `family_members` WRITE;
+/*!40000 ALTER TABLE `family_members` DISABLE KEYS */;
+INSERT INTO `family_members` VALUES (1,1,NULL,NULL,NULL,NULL,NULL),(2,2,NULL,NULL,NULL,NULL,NULL);
+/*!40000 ALTER TABLE `family_members` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `medications`
@@ -93,8 +122,18 @@ CREATE TABLE `medications` (
   PRIMARY KEY (`med_id`),
   KEY `member_id` (`member_id`),
   CONSTRAINT `medications_ibfk_1` FOREIGN KEY (`member_id`) REFERENCES `family_members` (`member_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `medications`
+--
+
+LOCK TABLES `medications` WRITE;
+/*!40000 ALTER TABLE `medications` DISABLE KEYS */;
+INSERT INTO `medications` VALUES (14,1,'warfarin',NULL,NULL,NULL,NULL),(15,1,'paracetamol',NULL,NULL,NULL,NULL),(16,1,'aspirin',NULL,NULL,NULL,NULL);
+/*!40000 ALTER TABLE `medications` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `otp_verification`
@@ -110,6 +149,15 @@ CREATE TABLE `otp_verification` (
   PRIMARY KEY (`phone_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `otp_verification`
+--
+
+LOCK TABLES `otp_verification` WRITE;
+/*!40000 ALTER TABLE `otp_verification` DISABLE KEYS */;
+/*!40000 ALTER TABLE `otp_verification` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `test_results`
@@ -135,6 +183,15 @@ CREATE TABLE `test_results` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Dumping data for table `test_results`
+--
+
+LOCK TABLES `test_results` WRITE;
+/*!40000 ALTER TABLE `test_results` DISABLE KEYS */;
+/*!40000 ALTER TABLE `test_results` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `users`
 --
 
@@ -148,8 +205,18 @@ CREATE TABLE `users` (
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `phone` (`phone_number`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `users`
+--
+
+LOCK TABLES `users` WRITE;
+/*!40000 ALTER TABLE `users` DISABLE KEYS */;
+INSERT INTO `users` VALUES (1,'abc','9999999999','2026-02-10 18:04:29'),(2,'def','9888888888','2026-02-10 18:04:29'),(5,'abc','9758964356','2026-02-10 18:06:38'),(6,'def','1234567890','2026-02-10 18:06:38');
+/*!40000 ALTER TABLE `users` ENABLE KEYS */;
+UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -160,4 +227,4 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-02-08 23:00:12
+-- Dump completed on 2026-03-21 19:33:33
