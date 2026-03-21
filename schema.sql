@@ -16,36 +16,6 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `ddi_history`
---
-
-DROP TABLE IF EXISTS `ddi_history`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `ddi_history` (
-  `ddi_id` int NOT NULL AUTO_INCREMENT,
-  `member_id` int NOT NULL,
-  `drug1` varchar(100) DEFAULT NULL,
-  `drug2` varchar(100) DEFAULT NULL,
-  `severity` varchar(20) DEFAULT NULL,
-  `message` text,
-  `checked_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`ddi_id`),
-  KEY `member_id` (`member_id`),
-  CONSTRAINT `ddi_history_ibfk_1` FOREIGN KEY (`member_id`) REFERENCES `family_members` (`member_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `ddi_history`
---
-
-LOCK TABLES `ddi_history` WRITE;
-/*!40000 ALTER TABLE `ddi_history` DISABLE KEYS */;
-/*!40000 ALTER TABLE `ddi_history` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `emergency_contacts`
 --
 
@@ -58,9 +28,12 @@ CREATE TABLE `emergency_contacts` (
   `emergency_phone` varchar(15) NOT NULL,
   `relationship` varchar(50) DEFAULT NULL,
   `contact_email` varchar(100) DEFAULT NULL,
+  `emergency_user_id` int NOT NULL,
   PRIMARY KEY (`contact_id`),
   KEY `user_id` (`user_id`),
-  CONSTRAINT `emergency_contacts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+  KEY `fk_emergency_user` (`emergency_user_id`),
+  CONSTRAINT `emergency_contacts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`),
+  CONSTRAINT `fk_emergency_user` FOREIGN KEY (`emergency_user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -227,4 +200,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-03-21 19:33:33
+-- Dump completed on 2026-03-21 19:57:51
