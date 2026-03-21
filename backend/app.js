@@ -31,5 +31,8 @@ app.use("/api/ocr", ocrRoute);
 const summaryRoute = require("./routes/summary");
 app.use("/api/summary", summaryRoute);
 
+// Emergency contact route
+const emergencyRoute = require("./routes/emergency");
+app.use("/api/emergency", emergencyRoute);
 
 module.exports = app;
