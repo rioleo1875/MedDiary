@@ -174,10 +174,10 @@ DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `user_id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(100) DEFAULT NULL,
-  `phone_number` varchar(15) NOT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `user_email` varchar(100) NOT NULL,
   PRIMARY KEY (`user_id`),
-  UNIQUE KEY `phone` (`phone_number`)
+  UNIQUE KEY `user_email` (`user_email`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -187,7 +187,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'abc','9999999999','2026-02-10 18:04:29'),(2,'def','9888888888','2026-02-10 18:04:29'),(5,'abc','9758964356','2026-02-10 18:06:38'),(6,'def','1234567890','2026-02-10 18:06:38');
+INSERT INTO `users` VALUES (1,'abc','2026-02-10 18:04:29','user1@temp.com'),(2,'def','2026-02-10 18:04:29','user2@temp.com'),(5,'abc','2026-02-10 18:06:38','user5@temp.com'),(6,'def','2026-02-10 18:06:38','user6@temp.com');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -200,4 +200,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-03-21 19:57:51
+-- Dump completed on 2026-03-21 22:33:00
