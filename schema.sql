@@ -25,15 +25,15 @@ DROP TABLE IF EXISTS `emergency_contacts`;
 CREATE TABLE `emergency_contacts` (
   `contact_id` int NOT NULL AUTO_INCREMENT,
   `user_id` int NOT NULL,
-  `emergency_phone` varchar(15) NOT NULL,
-  `relationship` varchar(50) DEFAULT NULL,
-  `contact_email` varchar(100) DEFAULT NULL,
   `emergency_user_id` int NOT NULL,
+  `relationship` varchar(50) DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`contact_id`),
+  UNIQUE KEY `uq_emergency_pair` (`user_id`,`emergency_user_id`),
   KEY `user_id` (`user_id`),
-  KEY `fk_emergency_user` (`emergency_user_id`),
-  CONSTRAINT `emergency_contacts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`),
-  CONSTRAINT `fk_emergency_user` FOREIGN KEY (`emergency_user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
+  KEY `emergency_user_id` (`emergency_user_id`),
+  CONSTRAINT `ec_emergency_user_fk` FOREIGN KEY (`emergency_user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
+  CONSTRAINT `ec_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -178,7 +178,7 @@ CREATE TABLE `users` (
   `user_email` varchar(100) NOT NULL,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `user_email` (`user_email`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -187,7 +187,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'abc','2026-02-10 18:04:29','user1@temp.com'),(2,'def','2026-02-10 18:04:29','user2@temp.com'),(5,'abc','2026-02-10 18:06:38','user5@temp.com'),(6,'def','2026-02-10 18:06:38','user6@temp.com');
+INSERT INTO `users` VALUES (1,'abc','2026-02-10 18:04:29','user1@temp.com'),(2,'def','2026-02-10 18:04:29','user2@temp.com'),(5,'abc','2026-02-10 18:06:38','user5@temp.com'),(6,'def','2026-02-10 18:06:38','user6@temp.com'),(7,'Test','2026-03-21 22:55:45','meddiary007@gmail.com');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -200,4 +200,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-03-21 22:33:00
+-- Dump completed on 2026-03-22  1:11:44
