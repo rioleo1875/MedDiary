@@ -8,122 +8,196 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Images } from "../../constants/Images";
+import {
+  getSelectedMember,
+  setSelectedMember,
+} from "../../constants/selectedMember";
+import { familyMembers } from "../../constants/familyData";
 
 export default function HomeScreen() {
   const router = useRouter();
 
+  const selectedId = getSelectedMember();
+  const selected = familyMembers.find((m) => m.id === selectedId);
+
   const activities = [
-    { id: "1", type: "Test Result", text: "Blood test updated", date: "05 Feb 2026" },
-    { id: "2", type: "Medication", text: "Ibuprofen dosage changed", date: "07 Feb 2026" },
+    {
+      id: "1",
+      type: "Test Result",
+      text: "Blood test updated",
+      date: "05 Feb 2026",
+    },
+    {
+      id: "2",
+      type: "Medication",
+      text: "Ibuprofen dosage changed",
+      date: "07 Feb 2026",
+    },
   ];
 
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
 
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
+          {/* HEADER */}
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.appName}>
+                <Text style={styles.med}>Med</Text>
+                <Text style={styles.diary}>Diary</Text>
+              </Text>
 
-        {/* Top Spacer */}
-        <View style={styles.topSpacer} />
-
-        {/* App Header */}
-        <View style={styles.headerRow}>
-          <View>
-          <Text style={styles.appName}>
-            <Text style={styles.med}>Med</Text>
-            <Text style={styles.diary}>Diary</Text>
-          </Text>
-          <Text style={styles.tagline}>
-            Your family medical records, in one place
-          </Text>
-        </View>
-
-        <TouchableOpacity onPress={() => router.replace("/auth/login" as any)}>
-          <Ionicons name="log-out-outline" size={24} color="#e63946" />
-        </TouchableOpacity>
-        </View>
-
-        {/* Medical ID */}
-        <Text style={styles.sectionTitle}>Medical ID</Text>
-
-        <View style={styles.card}>
-          <Image source={Images.avatar} style={styles.avatar} />
-
-          <View style={{ flex: 1, justifyContent: "center" }}>
-            <Text style={styles.name}>Archana A</Text>
-            <Text style={styles.info}>Blood Group: A+</Text>
-            <Text style={styles.info}>Age: 21</Text>
-            <Text style={styles.info}>Emergency Contact: Ajeesh A</Text>
-          </View>
-        </View>
-
-        {/* Quick Access Grid */}
-        <View style={styles.grid}>
-          {[
-            { label: "Family", route: "family" },
-            { label: "Medications", route: "medications" },
-            { label: "Test Results", route: "tests" },
-            { label: "Immunizations", route: "immunizations" },
-          ].map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.tile}
-              onPress={() => router.push(`/(tabs)/${item.route}` as any)}
-            >
-              <Text style={styles.tileText}>{item.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Recent Activity */}
-        <View style={styles.activityContainer}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-
-          {activities.map((item) => (
-            <View key={item.id} style={styles.activityItem}>
-              <View>
-                <Text style={styles.activityType}>{item.type}</Text>
-                <Text style={styles.activityText}>{item.text}</Text>
-              </View>
-              <Text style={styles.activityDate}>{item.date}</Text>
+              <Text style={styles.tagline}>
+                {selected
+                  ? `Viewing ${selected.name}'s Profile`
+                  : "Your family medical records, in one place"}
+              </Text>
             </View>
-          ))}
-        </View>
 
-        {/* Emergency Access */}
+            {/* ✅ FIXED ONLY THIS BLOCK */}
+            {selected ? (
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedMember(null);
+                  router.replace("/(tabs)");
+                }}
+              >
+                <Ionicons
+                  name="exit-outline"
+                  size={24}
+                  color="#e63946"
+                />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={() => router.replace("/auth/login" as any)}
+              >
+                <Ionicons
+                  name="log-out-outline"
+                  size={24}
+                  color="#e63946"
+                />
+              </TouchableOpacity>
+            )}
+
+          </View>
+
+          {/* MEDICAL ID */}
+          <Text style={styles.sectionTitle}>Medical ID</Text>
+
+          <View style={styles.card}>
+            <Image source={Images.avatar} style={styles.avatar} />
+
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name}>
+                {selected ? selected.name : "Archana A"}
+              </Text>
+
+              <Text style={styles.info}>
+                Blood Group: {selected ? selected.blood : "A+"}
+              </Text>
+
+              <Text style={styles.info}>
+                Age: {selected ? selected.age : "21"}
+              </Text>
+
+              <Text style={styles.info}>
+                Emergency Contact: Ajeesh A
+              </Text>
+            </View>
+          </View>
+
+          {/* QUICK ACCESS */}
+          <View style={styles.grid}>
+            {[
+              { label: "Family", route: "family" },
+              { label: "Medications", route: "medications" },
+              { label: "Test Results", route: "tests" },
+              { label: "Immunizations", route: "immunizations" },
+            ].map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.tile}
+                onPress={() =>
+                  router.push(`/(tabs)/${item.route}` as any)
+                }
+              >
+                <Text style={styles.tileText}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* ACTIVITY */}
+          <View style={styles.activityContainer}>
+            <Text style={styles.sectionTitle}>Recent Activity</Text>
+
+            {activities.map((item) => (
+              <View key={item.id} style={styles.activityItem}>
+                <View>
+                  <Text style={styles.activityType}>
+                    {item.type}
+                  </Text>
+                  <Text style={styles.activityText}>
+                    {item.text}
+                  </Text>
+                </View>
+
+                <Text style={styles.activityDate}>
+                  {item.date}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          {/* EMERGENCY */}
+          <TouchableOpacity
+            style={styles.emergencyBar}
+            onPress={() => router.push("/(tabs)/emergency")}
+          >
+            <Text style={styles.emergencyText}>
+              Emergency Access
+            </Text>
+            <Text style={styles.emergencySub}>
+              View Emergency Profile
+            </Text>
+          </TouchableOpacity>
+
+          {/* SUMMARY */}
+          <TouchableOpacity
+            style={styles.summaryBar}
+            onPress={() => router.push("/(tabs)/summary")}
+          >
+            <Text style={styles.summaryText}>
+              Generate Medical Summary
+            </Text>
+            <Text style={styles.summarySub}>
+              View consolidated medical information
+            </Text>
+          </TouchableOpacity>
+
+        </ScrollView>
+
+        {/* CHAT */}
         <TouchableOpacity
-          style={styles.emergencyBar}
-          onPress={() => router.push("/(tabs)/emergency")}
+          style={styles.chatBubble}
+          onPress={() => router.push("/(tabs)/chatbot")}
         >
-          <Text style={styles.emergencyText}>Emergency Access</Text>
-          <Text style={styles.emergencySub}>View Emergency Profile</Text>
+          <Ionicons
+            name="chatbubbles-sharp"
+            size={28}
+            color="#29A9F8"
+          />
         </TouchableOpacity>
 
-        {/* Generate Medical Summary */}
-        <TouchableOpacity
-          style={styles.summaryBar}
-          onPress={() => router.push("/(tabs)/summary")}
-        >
-          <Text style={styles.summaryText}>Generate Medical Summary</Text>
-          <Text style={styles.summarySub}>
-            View consolidated medical information
-          </Text>
-        </TouchableOpacity>
-
-      </ScrollView>
-
-      {/* Floating Chatbot Button */}
-      <TouchableOpacity
-  style={styles.chatBubble}
-  onPress={() => router.push("../(tabs)/chatbot")}
->
-  <Ionicons name="chatbubbles-sharp" size={28} color="#29A9F8"/>
-</TouchableOpacity>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -135,15 +209,14 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    paddingBottom: 28,
+    paddingBottom: 100,
   },
 
-  topSpacer: {
-    height: 24,
-  },
-
-  header: {
-    marginBottom: 22,
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
   },
 
   appName: {
@@ -151,18 +224,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  med: {
-    color: "#29A9F8",
-  },
-
-  diary: {
-    color: "#1f2937",
-  },
+  med: { color: "#29A9F8" },
+  diary: { color: "#1f2937" },
 
   tagline: {
     fontSize: 14,
     color: "#6b7280",
-    marginTop: 6,
+    marginTop: 4,
   },
 
   sectionTitle: {
@@ -177,16 +245,8 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 18,
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 22,
-
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-
+    marginBottom: 20,
     elevation: 4,
-
     borderLeftWidth: 6,
     borderLeftColor: "#29A9F8",
   },
@@ -196,14 +256,11 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     marginRight: 16,
-    borderWidth: 2,
-    borderColor: "#eaf6ff",
   },
 
   name: {
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: "700",
-    color: "#1f2937",
   },
 
   info: {
@@ -216,7 +273,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginTop: 18,
+    marginTop: 10,
   },
 
   tile: {
@@ -232,7 +289,6 @@ const styles = StyleSheet.create({
   tileText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#1f2937",
   },
 
   activityContainer: {
@@ -240,12 +296,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 15,
     marginTop: 10,
-
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-
     elevation: 4,
   },
 
@@ -263,7 +313,6 @@ const styles = StyleSheet.create({
 
   activityText: {
     fontSize: 14,
-    color: "#374151",
   },
 
   activityDate: {
@@ -320,27 +369,6 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
-
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-
     elevation: 6,
   },
-
-  headerRow: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: 22,
-},
-
-logout: {
-  color: "#e63946",
-  fontWeight: "600",
-  fontSize: 14,
-},
-
-  
 });

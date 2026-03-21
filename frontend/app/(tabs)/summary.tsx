@@ -1,44 +1,55 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useRouter } from "expo-router";
 
 export default function MedicalSummary() {
+  const router = useRouter();
 
-  // 🔹 This simulates OCR-extracted structured data
+  // 🔹 Simulated OCR extracted structured data (FR4 → input)
   const medicalData = {
     name: "Archana A",
     age: 21,
     bloodGroup: "A+",
     medications: [
       { name: "Ibuprofen", dosage: "200 mg" },
-      { name: "Vitamin D", dosage: "1000 IU" }
+      { name: "Vitamin D", dosage: "1000 IU" },
     ],
     test: {
       name: "Blood Test",
       date: "Feb 2026",
       hemoglobin: 11.2,
-    }
+    },
+    allergies: "None reported",
   };
 
-  // 🔹 Rule-based summary generator (NO AI)
+  // 🔹 RULE-BASED SUMMARY (FR6 — NO AI)
   const generateSummary = () => {
     let summary = "";
 
     // Patient Info
     summary += `Patient ${medicalData.name}, aged ${medicalData.age}, has blood group ${medicalData.bloodGroup}. `;
 
-    // Test Analysis (rule-based)
+    // Test Evaluation (FR5 logic reused)
     if (medicalData.test.hemoglobin < 12) {
-      summary += `Recent lab results indicate a hemoglobin level of ${medicalData.test.hemoglobin} g/dL, which is slightly below the normal range. `;
+      summary += `Recent laboratory analysis shows hemoglobin level of ${medicalData.test.hemoglobin} g/dL, which is below the normal range. `;
     } else {
-      summary += `Recent lab results are within normal range. `;
+      summary += `Recent laboratory results are within normal limits. `;
     }
 
     // Medications
     if (medicalData.medications.length > 0) {
-      const meds = medicalData.medications.map(m => m.name).join(", ");
-      summary += `The patient is currently taking ${meds}. `;
+      const meds = medicalData.medications
+        .map((m) => `${m.name}`)
+        .join(", ");
+      summary += `Current medications include ${meds}. `;
     }
 
-    summary += `No critical conditions detected based on available records.`;
+    // Allergies
+    summary += `Reported allergies: ${medicalData.allergies}. `;
+
+    // Conclusion
+    summary += `No critical medical risks identified based on available records.`;
 
     return summary;
   };
@@ -46,21 +57,40 @@ export default function MedicalSummary() {
   const summaryText = generateSummary();
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={{ flex: 1 }}>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
 
-      <Text style={styles.title}>Medical Summary</Text>
+        {/* 🔥 HEADER */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#1f2937" />
+          </TouchableOpacity>
 
-      {/* Generated Summary Card */}
-      <View style={styles.card}>
-        <Text style={styles.section}>Summary</Text>
-        <Text style={styles.summaryText}>{summaryText}</Text>
-      </View>
+          <Text style={styles.title}>Medical Summary</Text>
 
-      <Text style={styles.note}>
-        This summary is generated using extracted medical data and rule-based evaluation. It is for informational purposes only.
-      </Text>
+          <View style={{ width: 24 }} />
+        </View>
 
-    </ScrollView>
+        {/* 🧠 SUMMARY CARD */}
+        <View style={styles.card}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>Generated Summary</Text>
+          </View>
+
+          <Text style={styles.summaryText}>{summaryText}</Text>
+        </View>
+
+        {/* ⚠️ NOTE */}
+        <Text style={styles.note}>
+          This summary is generated using extracted medical data and
+          rule-based evaluation. It is intended for informational use only.
+        </Text>
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -68,30 +98,55 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#eaf6ff",
-    paddingHorizontal: 20,
-    paddingTop: 40,
+    padding: 20,
+  },
+
+  /* HEADER */
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 15,
+    fontSize: 18,
+    fontWeight: "600",
     color: "#1f2937",
   },
 
+  /* CARD */
   card: {
     backgroundColor: "#ffffff",
-    borderRadius: 12,
-    padding: 15,
+    borderRadius: 16,
+    padding: 18,
     marginBottom: 15,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+
+    elevation: 4,
   },
 
-  section: {
-    fontSize: 15,
-    fontWeight: "bold",
-    marginBottom: 8,
+  /* BADGE */
+  badge: {
+    backgroundColor: "#29A9F8",
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginBottom: 10,
   },
 
+  badgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  /* TEXT */
   summaryText: {
     fontSize: 14,
     color: "#374151",
