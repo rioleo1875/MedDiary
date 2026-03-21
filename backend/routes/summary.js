@@ -100,4 +100,45 @@ router.get("/generate/:memberId", async (req, res) => {
     doc.end();
 });
 
+router.get("/emergency/:userId", async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    
+    const [members] = await db.query(
+      `SELECT member_id FROM family_members WHERE user_id = ?`,
+      [userId]
+    );
+
+    if (members.length === 0) {
+      return res.json({ summary: "No data available" });
+    }
+
+    const memberIds = members.map(m => m.member_id);
+
+   
+    const [results] = await db.query(
+      `SELECT test_name, value, status 
+       FROM test_results 
+       WHERE member_id IN (?)`,
+      [memberIds]
+    );
+
+    if (results.length === 0) {
+      return res.json({ summary: "No test results available" });
+    }
+
+    
+    const summary = results.map(r =>
+      `${r.test_name.toUpperCase()}: ${r.value} (${r.status})`
+    ).join("\n");
+
+    res.json({ summary });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to generate summary" });
+  }
+});
+
 module.exports = router;  
