@@ -6,10 +6,10 @@ export default function CreateAccountScreen() {
   const router = useRouter();
 
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState(""); // ✅ changed
 
   const handleCreateAccount = () => {
-    if (!name || phone.length < 10) {
+    if (!name || !email.includes("@")) { // ✅ basic email validation
       alert("Enter valid details");
       return;
     }
@@ -44,11 +44,12 @@ export default function CreateAccountScreen() {
         />
 
         <TextInput
-          placeholder="Phone"
+          placeholder="Email" // ✅ changed
           placeholderTextColor="#9ca3af"
-          keyboardType="phone-pad"
-          value={phone}
-          onChangeText={setPhone}
+          keyboardType="email-address" // ✅ better UX
+          autoCapitalize="none" // ✅ important for email
+          value={email}
+          onChangeText={setEmail}
           style={styles.input}
         />
 
