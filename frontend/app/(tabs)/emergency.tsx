@@ -1,40 +1,71 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useRouter } from "expo-router";
 
 export default function EmergencyProfile() {
+  const router = useRouter();
+
   return (
-    <ScrollView style={styles.container}>
-      
-      <Text style={styles.title}>Emergency Profile</Text>
+    <SafeAreaView style={{ flex: 1 }}>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
 
-      {/* Basic Identity */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Patient Details</Text>
-        <Text style={styles.item}>Name: Archana A</Text>
-        <Text style={styles.item}>Age: 21</Text>
-        <Text style={styles.item}>Blood Group: A+</Text>
-      </View>
+        {/* 🔥 HEADER */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#1f2937" />
+          </TouchableOpacity>
 
-      {/* Critical Medical Info */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Critical Medical Information</Text>
-        <Text style={styles.item}>Allergies: None reported</Text>
-        <Text style={styles.item}>Chronic Conditions: None</Text>
-        <Text style={styles.item}>Current Medications: Ibuprofen</Text>
-      </View>
+          <Text style={styles.title}>Emergency Profile</Text>
 
-      {/* Emergency Contact */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Emergency Contact</Text>
-        <Text style={styles.item}>Name: Ajeesh A</Text>
-        <Text style={styles.item}>Relation: Family</Text>
-        <Text style={styles.item}>Phone: 9947253693</Text>
-      </View>
+          <View style={{ width: 24 }} />
+        </View>
 
-      <Text style={styles.note}>
-        This information is read-only and intended strictly for emergency use.
-      </Text>
+        {/* 🚨 ALERT BAR */}
+        <View style={styles.alertBar}>
+          <Ionicons name="warning" size={18} color="#fff" />
+          <Text style={styles.alertText}>
+            Emergency Information (Read-Only)
+          </Text>
+        </View>
 
-    </ScrollView>
+        {/* 🧾 PATIENT DETAILS */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Patient Details</Text>
+
+          <Text style={styles.item}><Text style={styles.label}>Name:</Text> Archana A</Text>
+          <Text style={styles.item}><Text style={styles.label}>Age:</Text> 21</Text>
+          <Text style={styles.item}><Text style={styles.label}>Blood Group:</Text> A+</Text>
+        </View>
+
+        {/* ⚕️ CRITICAL INFO */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Critical Medical Information</Text>
+
+          <Text style={styles.item}><Text style={styles.label}>Allergies:</Text> None reported</Text>
+          <Text style={styles.item}><Text style={styles.label}>Conditions:</Text> None</Text>
+          <Text style={styles.item}><Text style={styles.label}>Medications:</Text> Ibuprofen</Text>
+        </View>
+
+        {/* 📞 EMERGENCY CONTACT */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Emergency Contact</Text>
+
+          <Text style={styles.item}><Text style={styles.label}>Name:</Text> Ajeesh A</Text>
+          <Text style={styles.item}><Text style={styles.label}>Relation:</Text> Father</Text>
+          <Text style={styles.item}><Text style={styles.label}>Phone:</Text> 9947253693</Text>
+        </View>
+
+        {/* NOTE */}
+        <Text style={styles.note}>
+          This information is strictly for emergency use and is read-only.
+        </Text>
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -42,34 +73,72 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#eaf6ff",
-    paddingHorizontal: 20,
-    paddingTop: 40,
+    padding: 20,
+  },
+
+  /* HEADER */
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 15,
-    color: "#e63946",
-  },
-  card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 30,
-    elevation: 5,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: "bold",
-    marginBottom: 8,
+    fontSize: 18,
+    fontWeight: "600",
     color: "#1f2937",
   },
+
+  /* ALERT */
+  alertBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e63946",
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+
+  alertText: {
+    color: "#fff",
+    marginLeft: 8,
+    fontWeight: "600",
+  },
+
+  /* CARD */
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+
+    elevation: 4,
+  },
+
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    marginBottom: 10,
+    color: "#1f2937",
+  },
+
   item: {
     fontSize: 14,
     color: "#374151",
-    marginBottom: 4,
+    marginBottom: 6,
   },
+
+  label: {
+    fontWeight: "600",
+    color: "#1f2937",
+  },
+
   note: {
     fontSize: 12,
     color: "#6b7280",
