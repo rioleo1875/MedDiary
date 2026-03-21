@@ -1,9 +1,10 @@
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function OtpScreen() {
   const router = useRouter();
+  const { email } = useLocalSearchParams(); 
   const [otp, setOtp] = useState("");
   const inputRef = useRef<TextInput>(null);
 
@@ -13,14 +14,33 @@ export default function OtpScreen() {
     }, 300);
   }, []);
 
-  const verifyOtp = () => {
-    if (otp.length !== 6) {
-      alert("Enter valid OTP");
-      return;
+const verifyOtp = async () => {
+  if (otp.length !== 6) {
+    alert("Enter valid OTP");
+    return;
+  }
+
+  try {
+    const res = await fetch("http://192.168.1.12:3000/auth/verify-otp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, otp })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      router.replace("/(tabs)");
+    } else {
+      alert("Invalid OTP");
     }
 
-    router.replace("/(tabs)");
-  };
+  } catch (error) {
+    alert("Error verifying OTP");
+  }
+};
 
   return (
     <View style={styles.container}>

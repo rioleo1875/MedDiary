@@ -10,7 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@thednp/dommatrix": "^3.0.2",
+    "@thednp/dommatrix": "^3.0.3",
     "axios": "^1.13.4",
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",

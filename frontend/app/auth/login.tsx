@@ -6,14 +6,42 @@ export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
 
-  const handleLogin = () => {
-    if (!email || !email.includes("@")) {
-      alert("Enter valid email address");
-      return;
+const handleLogin = async () => {
+  alert("Button clicked"); 
+
+  if (!email || !email.includes("@")) {
+    alert("Enter valid email address");
+    return;
+  }
+
+  try {
+    const res = await fetch("http://192.168.1.12:3000/auth/send-otp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email })
+    });
+
+    alert("API called");
+
+    const data = await res.json();
+    console.log(data);
+
+    if (data.success) {
+      router.push({
+        pathname: "/auth/otp",
+        params: { email },
+      });
+    } else {
+      alert("Failed to send OTP");
     }
 
-    router.push("/auth/otp");
-  };
+  } catch (error) {
+    console.log(error);
+    alert("Error sending OTP");
+  }
+};
 
   return (
     <View style={styles.container}>

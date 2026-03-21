@@ -23,6 +23,10 @@ app.use("/api/chatbot", chatbotRoutes);
 const testRoutes = require("./routes/tests");
 app.use("/api/tests", testRoutes);
 
+//auth route
+const authRoute = require("./routes/auth");
+app.use("/auth", authRoute);
+
 // OCR route
 const ocrRoute = require("./routes/ocr");
 app.use("/api/ocr", ocrRoute);
