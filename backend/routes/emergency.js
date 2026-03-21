@@ -5,11 +5,12 @@ const db = require("../config/db");
 // Add emergency contact
 router.post("/add", async (req, res) => {
   try {
-    const { email, relationship } = req.body;
+    const { user_email, relationship } = req.body;
+    const email = user_email.trim().toLowerCase();
     const userId = 1;
 
     const [user] = await db.query(
-      "SELECT user_id FROM users WHERE email = ?",
+      "SELECT user_id FROM users WHERE user_email = ?",
       [email]
     );
 
