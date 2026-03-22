@@ -61,6 +61,7 @@ CREATE TABLE `family_members` (
   `gender` varchar(20) DEFAULT NULL,
   `blood_group` varchar(10) DEFAULT NULL,
   `allergies` text,
+  `relation` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`member_id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `family_members_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
@@ -73,8 +74,41 @@ CREATE TABLE `family_members` (
 
 LOCK TABLES `family_members` WRITE;
 /*!40000 ALTER TABLE `family_members` DISABLE KEYS */;
-INSERT INTO `family_members` VALUES (1,1,NULL,NULL,NULL,NULL,NULL),(2,2,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `family_members` VALUES (1,1,NULL,NULL,NULL,NULL,NULL,NULL),(2,2,NULL,NULL,NULL,NULL,NULL,NULL);
 /*!40000 ALTER TABLE `family_members` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `medication_reminders`
+--
+
+DROP TABLE IF EXISTS `medication_reminders`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `medication_reminders` (
+  `reminder_id` int NOT NULL AUTO_INCREMENT,
+  `med_id` int NOT NULL,
+  `member_id` int NOT NULL,
+  `hour` tinyint NOT NULL,
+  `minute` tinyint NOT NULL,
+  `label` varchar(100) DEFAULT NULL,
+  `notification_id` varchar(100) DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`reminder_id`),
+  KEY `med_id` (`med_id`),
+  KEY `member_id` (`member_id`),
+  CONSTRAINT `mr_med_fk` FOREIGN KEY (`med_id`) REFERENCES `medications` (`med_id`) ON DELETE CASCADE,
+  CONSTRAINT `mr_member_fk` FOREIGN KEY (`member_id`) REFERENCES `family_members` (`member_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `medication_reminders`
+--
+
+LOCK TABLES `medication_reminders` WRITE;
+/*!40000 ALTER TABLE `medication_reminders` DISABLE KEYS */;
+/*!40000 ALTER TABLE `medication_reminders` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -200,4 +234,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-03-22  1:11:44
+-- Dump completed on 2026-03-22 15:16:30
