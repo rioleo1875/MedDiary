@@ -44,4 +44,12 @@ app.use("/api/emergency", emergencyRoute);
 const familyRoute = require("./routes/family");
 app.use("/api/family", familyRoute);
 
+// Medication route
+const medicationRoute = require("./routes/medications");
+app.use("/api/medications", medicationRoute);
+
+// Reminder route
+const reminderRoute = require("./routes/reminders");
+app.use("/api/reminders", reminderRoute);
+
 module.exports = app;
