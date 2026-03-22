@@ -2,20 +2,23 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
+import { API_URL } from "../../constants/api";
+
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
 const handleLogin = async () => {
-  alert("Button clicked"); 
-
   if (!email || !email.includes("@")) {
     alert("Enter valid email address");
     return;
   }
 
+  setLoading(true);
+
   try {
-    const res = await fetch("http://192.168.1.12:3000/auth/send-otp", {
+    const res = await fetch(`${API_URL}/auth/send-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -23,10 +26,7 @@ const handleLogin = async () => {
       body: JSON.stringify({ email })
     });
 
-    alert("API called");
-
     const data = await res.json();
-    console.log(data);
 
     if (data.success) {
       router.push({
@@ -40,6 +40,8 @@ const handleLogin = async () => {
   } catch (error) {
     console.log(error);
     alert("Error sending OTP");
+  } finally {
+    setLoading(false);
   }
 };
 
@@ -67,11 +69,12 @@ const handleLogin = async () => {
           autoCapitalize="none"
           value={email}
           onChangeText={setEmail}
+          editable={!loading}
           style={styles.input}
         />
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Login</Text>
+        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+          <Text style={styles.buttonText}>{loading ? "Sending..." : "Login"}</Text>
         </TouchableOpacity>
       </View>
 
@@ -88,6 +91,7 @@ const handleLogin = async () => {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
 

@@ -2,10 +2,16 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
+import { API_URL } from "../../constants/api";
+
+
 export default function OtpScreen() {
   const router = useRouter();
   const { email } = useLocalSearchParams(); 
   const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [timer, setTimer] = useState(60);
+  const [canResend, setCanResend] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -14,14 +20,27 @@ export default function OtpScreen() {
     }, 300);
   }, []);
 
+  useEffect(() => {
+    if (timer === 0) {
+      setCanResend(true);
+      return;
+    }
+    const interval = setInterval(() => {
+      setTimer((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timer]);
+
 const verifyOtp = async () => {
   if (otp.length !== 6) {
     alert("Enter valid OTP");
     return;
   }
 
+  setLoading(true);
+
   try {
-    const res = await fetch("http://192.168.1.12:3000/auth/verify-otp", {
+    const res = await fetch(`${API_URL}/auth/verify-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -35,10 +54,44 @@ const verifyOtp = async () => {
       router.replace("/(tabs)");
     } else {
       alert("Invalid OTP");
+      setOtp("");
     }
 
   } catch (error) {
     alert("Error verifying OTP");
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleResendOtp = async () => {
+  if (!canResend) return;
+
+  setLoading(true);
+  setTimer(60);
+  setCanResend(false);
+
+  try {
+    const res = await fetch(`${API_URL}/auth/send-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert("OTP resent to your email");
+      setOtp("");
+    } else {
+      alert("Failed to resend OTP");
+    }
+  } catch (error) {
+    alert("Error resending OTP");
+  } finally {
+    setLoading(false);
   }
 };
 
@@ -85,11 +138,15 @@ const verifyOtp = async () => {
           ))}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={verifyOtp}>
-          <Text style={styles.buttonText}>Verify OTP</Text>
+        <TouchableOpacity style={styles.button} onPress={verifyOtp} disabled={loading}>
+          <Text style={styles.buttonText}>{loading ? "Verifying..." : "Verify OTP"}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.resend}>Resend OTP</Text>
+        <TouchableOpacity onPress={handleResendOtp} disabled={!canResend || loading}>
+          <Text style={styles.resend}>
+            {canResend ? "Resend OTP" : `Resend in ${timer}s`}
+          </Text>
+        </TouchableOpacity>
 
       </View>
 

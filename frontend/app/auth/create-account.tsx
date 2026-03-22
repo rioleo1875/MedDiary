@@ -2,19 +2,48 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
+import { API_URL } from "../../constants/api";
+
 export default function CreateAccountScreen() {
   const router = useRouter();
 
   const [name, setName] = useState("");
-  const [email, setEmail] = useState(""); // ✅ changed
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleCreateAccount = () => {
-    if (!name || !email.includes("@")) { // ✅ basic email validation
+  const handleCreateAccount = async () => {
+    if (!name || !email.includes("@")) {
       alert("Enter valid details");
       return;
     }
 
-    router.push("/auth/otp");
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        router.push({
+          pathname: "/auth/otp",
+          params: { email },
+        });
+      } else {
+        alert(data.message || "Failed to create account");
+      }
+    } catch (error) {
+      console.log(error);
+      alert("Error creating account");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -53,8 +82,8 @@ export default function CreateAccountScreen() {
           style={styles.input}
         />
 
-        <TouchableOpacity style={styles.button} onPress={handleCreateAccount}>
-          <Text style={styles.buttonText}>Create Account</Text>
+         <TouchableOpacity style={styles.button} onPress={handleCreateAccount} disabled={loading}>
+          <Text style={styles.buttonText}>{loading ? "Creating..." : "Create Account"}</Text>
         </TouchableOpacity>
 
       </View>
