@@ -80,6 +80,83 @@ module.exports = {
     normal_min: 0,
     normal_max: 400
   },
+  
+  //IMMUNOLOGY | ALLERGY
+ige: {
+  aliases: [
+    "ige",
+    "immunoglobulin e",
+    "total ige",
+    "serum ige",
+    "ige total"
+  ],
+  normal_min: 0,
+  normal_max: 100  
+},
+
+igg: {
+  aliases: [
+    "igg",
+    "immunoglobulin g"
+  ],
+  normal_min: 700,
+  normal_max: 1600
+},
+
+iga: {
+  aliases: [
+    "iga",
+    "immunoglobulin a"
+  ],
+  normal_min: 70,
+  normal_max: 400
+},
+
+igm: {
+  aliases: [
+    "igm",
+    "immunoglobulin m"
+  ],
+  normal_min: 40,
+  normal_max: 230
+},
+
+crp: {
+  aliases: [
+    "crp",
+    "c reactive protein",
+    "c-reactive protein"
+  ],
+  normal_min: 0,
+  normal_max: 5
+},
+
+esr: {
+  aliases: [
+    "esr",
+    "erythrocyte sedimentation rate"
+  ],
+  normal_min: 0,
+  normal_max: 20
+},
+
+ana: {
+  aliases: [
+    "ana",
+    "antinuclear antibody"
+  ],
+  normal_min: 0,
+  normal_max: 1   
+},
+
+rf: {
+  aliases: [
+    "rf",
+    "rheumatoid factor"
+  ],
+  normal_min: 0,
+  normal_max: 20
+},
 
   // LIVER
   alt: {
