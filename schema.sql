@@ -62,6 +62,7 @@ CREATE TABLE `family_members` (
   `blood_group` varchar(10) DEFAULT NULL,
   `allergies` text,
   `relation` varchar(50) DEFAULT NULL,
+  `Immunization` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`member_id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `family_members_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
@@ -74,7 +75,7 @@ CREATE TABLE `family_members` (
 
 LOCK TABLES `family_members` WRITE;
 /*!40000 ALTER TABLE `family_members` DISABLE KEYS */;
-INSERT INTO `family_members` VALUES (1,1,NULL,NULL,NULL,NULL,NULL,NULL),(2,2,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `family_members` VALUES (1,1,NULL,NULL,NULL,NULL,NULL,NULL,NULL),(2,2,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 /*!40000 ALTER TABLE `family_members` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -212,7 +213,7 @@ CREATE TABLE `users` (
   `user_email` varchar(100) NOT NULL,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `user_email` (`user_email`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -221,7 +222,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'abc','2026-02-10 18:04:29','user1@temp.com'),(2,'def','2026-02-10 18:04:29','user2@temp.com'),(5,'abc','2026-02-10 18:06:38','user5@temp.com'),(6,'def','2026-02-10 18:06:38','user6@temp.com'),(7,'Test','2026-03-21 22:55:45','meddiary007@gmail.com');
+INSERT INTO `users` VALUES (1,'abc','2026-02-10 18:04:29','user1@temp.com'),(2,'def','2026-02-10 18:04:29','user2@temp.com'),(5,'abc','2026-02-10 18:06:38','user5@temp.com'),(6,'def','2026-02-10 18:06:38','user6@temp.com'),(8,'Del','2026-03-22 17:07:41','meddiary007@gmail.com'),(9,'Del','2026-03-22 18:27:15','delj895@gmail.com'),(10,'Diya','2026-03-22 18:30:21','diyashyam2019@gmail.com'),(11,'Del','2026-03-22 18:36:41','denilj895@gmail.com');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -234,4 +235,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-03-22 15:16:30
+-- Dump completed on 2026-03-24 20:49:25
