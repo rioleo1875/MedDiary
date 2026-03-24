@@ -17,6 +17,8 @@ export type Member = {
   blood_group: string;
   relation: string;
   allergies?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
 };
 
 type MemberContextType = {

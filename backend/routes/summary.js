@@ -3,8 +3,12 @@ const router = express.Router();
 const db = require("../config/db");
 const PDFDocument = require("pdfkit");
 
+
 function getUserId(req) {
-  return parseInt(req.headers["x-user-id"], 10);
+ 
+  const fromQuery = parseInt(req.query.userId, 10);
+  const fromHeader = parseInt(req.headers["x-user-id"], 10);
+  return fromHeader || fromQuery || 0;
 }
 
 async function buildSummaryPDF(memberId, doc) {
@@ -161,6 +165,7 @@ router.get("/emergency/:targetUserId", async (req, res) => {
       return res.status(404).json({ error: "No family members found for this user" });
     }
 
+   
     const doc = new PDFDocument();
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(

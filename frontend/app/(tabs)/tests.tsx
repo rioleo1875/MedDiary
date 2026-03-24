@@ -1,22 +1,68 @@
-import { ScrollView, StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
+import { useState } from "react";
+import * as DocumentPicker from "expo-document-picker";
 import ChatBubble from "../../components/ChatBubble";
+import { API_BASE } from "../../context/MemberContext";
 
 export default function TestScreen() {
   const router = useRouter();
 
-  const tests = [
-    {
-      name: "Hemoglobin",
-      value: 11.2,
-      normalRange: "12–16 g/dL",
-      lastUpdated: "05 Feb 2026",
-    },
-  ];
+  const [tests, setTests] = useState<any[]>([]);
 
-  // 🔹 FR5: Rule-based classification
+ 
+  const handleUpload = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["application/pdf", "image/*"],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) return;
+
+      const file = result.assets[0];
+
+      const formData = new FormData();
+      formData.append("file", {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType || "application/pdf",
+      } as any);
+
+      const res = await fetch(`${API_BASE}/api/ocr/upload`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "multipart/form-data",
+          "x-user-id": "1", 
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (data.tests) {
+        setTests(data.tests);
+        Alert.alert("Success", "Report analyzed successfully");
+      } else {
+        Alert.alert("No data extracted");
+      }
+
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Upload failed");
+    }
+  };
+
+
   const getStatus = (value: number) => {
     if (value < 12) return { label: "Abnormal", color: "#e63946" };
     if (value < 13) return { label: "Borderline", color: "#f59e0b" };
@@ -32,7 +78,7 @@ export default function TestScreen() {
           showsVerticalScrollIndicator={false}
         >
 
-          {/* 🔥 HEADER */}
+         
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()}>
               <Ionicons name="arrow-back" size={24} color="#1f2937" />
@@ -43,10 +89,16 @@ export default function TestScreen() {
             <View style={{ width: 24 }} />
           </View>
 
-          {/* 📋 TEST LIST */}
+          
+          <TouchableOpacity style={styles.uploadBtn} onPress={handleUpload}>
+            <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
+            <Text style={styles.uploadText}>Upload Report</Text>
+          </TouchableOpacity>
+
+          
           {tests.length === 0 ? (
             <Text style={styles.empty}>
-              No test results available
+              Upload a report to see results
             </Text>
           ) : (
             tests.map((t, i) => {
@@ -59,28 +111,22 @@ export default function TestScreen() {
                   <Text style={styles.name}>{t.name}</Text>
 
                   {/* VALUE */}
-                  <Text style={styles.value}>
-                    {t.value}
-                  </Text>
+                  <Text style={styles.value}>{t.value}</Text>
 
                   {/* RANGE */}
                   <Text style={styles.info}>
                     Normal Range: {t.normalRange}
                   </Text>
 
-                  {/* LAST UPDATED (FR15) */}
+                  {/* DATE */}
                   <Text style={styles.updated}>
                     Last Updated: {t.lastUpdated}
                   </Text>
 
-                  {/* STATUS BADGE (FR5) */}
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      { backgroundColor: status.color },
-                    ]}
-                  >
-                    <Text style={styles.statusText}>
+                 
+                  <View style={styles.statusRow}>
+                    <View style={[styles.dot, { backgroundColor: status.color }]} />
+                    <Text style={[styles.statusText, { color: status.color }]}>
                       {status.label}
                     </Text>
                   </View>
@@ -105,7 +151,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
 
-  /* HEADER */
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -119,7 +164,22 @@ const styles = StyleSheet.create({
     color: "#1f2937",
   },
 
-  /* CARD */
+  uploadBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#29A9F8",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+
+  uploadText: {
+    color: "#fff",
+    marginLeft: 8,
+    fontWeight: "600",
+  },
+
   card: {
     backgroundColor: "#ffffff",
     borderRadius: 16,
@@ -158,17 +218,21 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
 
-  /* STATUS */
-  statusBadge: {
-    alignSelf: "flex-start",
+  /* 🚦 TRAFFIC LIGHT */
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
+  },
+
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 6,
   },
 
   statusText: {
-    color: "#ffffff",
     fontWeight: "600",
     fontSize: 12,
   },

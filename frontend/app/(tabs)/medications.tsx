@@ -2,145 +2,236 @@ import {
   StyleSheet,
   Text,
   View,
-  FlatList,
   TouchableOpacity,
+  ScrollView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useEffect, useState } from "react";
-import { useLocalSearchParams } from "expo-router";
-
-const API_URL = "YOUR_BACKEND_URL"; 
+import { useEffect, useState, useCallback } from "react";
+import { useRouter, useFocusEffect } from "expo-router";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import ChatBubble from "../../components/ChatBubble";
+import { useMember, API_BASE } from "../../context/MemberContext";
 
 export default function Medications() {
-  const { memberId } = useLocalSearchParams();
-  const [medications, setMedications] = useState<any[]>([]);
+  const router = useRouter();
+  const { activeMember, userId } = useMember();
+
+  const [regularMeds, setRegularMeds] = useState<any[]>([]);
+  const [tempMeds, setTempMeds] = useState<any[]>([]);
+  const [interaction, setInteraction] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const fetchMedications = async () => {
+    if (!activeMember) return;
+    setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/medications/${memberId}`, {
-        headers: {
-          "x-user-id": "1", 
-        },
-      });
-
+      const res = await fetch(
+        `${API_BASE}/api/medications/${activeMember.member_id}`,
+        { headers: { "x-user-id": String(userId) } }
+      );
       const data = await res.json();
-      setMedications(data);
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Failed to load medications");
-    }
-  };
-
-  useEffect(() => {
-    if (memberId) fetchMedications();
-  }, [memberId]);
-
-
-  const handleDelete = async (medId: number) => {
-    try {
-      await fetch(`${API_URL}/medications/${medId}`, {
-        method: "DELETE",
-        headers: {
-          "x-user-id": "1",
-        },
-      });
 
       
-      fetchMedications();
+      setRegularMeds(data.filter((m: any) => !m.end_date));
+      setTempMeds(data.filter((m: any) => m.end_date));
+
+      checkInteractions(data);
     } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Failed to delete medication");
+      Alert.alert("Error", "Failed to load medications");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const renderItem = ({ item }: any) => (
-    <View style={styles.card}>
-      <Text style={styles.medName}>{item.med_name}</Text>
+  const checkInteractions = async (meds: any[]) => {
+    try {
+      const names = meds.map((m: any) => m.med_name);
+      if (names.length < 2) {
+        setInteraction(null);
+        return;
+      }
 
-      {item.dosage && (
-        <Text style={styles.detail}>Dose: {item.dosage}</Text>
-      )}
-      {item.frequency && (
-        <Text style={styles.detail}>Frequency: {item.frequency}</Text>
-      )}
+      const res = await fetch(`${API_BASE}/api/ddi/check`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": String(userId),
+        },
+        body: JSON.stringify({ medications: names }),
+      });
+      const data = await res.json();
+      setInteraction(data.warning ?? null);
+    } catch (err) {
+      console.error("DDI check error:", err);
+    }
+  };
 
-      {/* DELETE BUTTON */}
-      <TouchableOpacity
-        style={styles.deleteBtn}
-        onPress={() => handleDelete(item.med_id)}
-      >
-        <Text style={styles.deleteText}>Delete</Text>
-      </TouchableOpacity>
+  
+  useFocusEffect(
+    useCallback(() => {
+      fetchMedications();
+    }, [activeMember?.member_id])
+  );
+
+  const renderMed = (med: any) => (
+    <View key={med.med_id} style={styles.pill}>
+      <Text style={styles.pillText}>{med.med_name}</Text>
     </View>
   );
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <View style={styles.container}>
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={{ paddingBottom: 120 }}
+        >
 
-        <Text style={styles.title}>Medications</Text>
+          {/* HEADER */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={24} color="#1f2937" />
+            </TouchableOpacity>
+            <Text style={styles.title}>Medications</Text>
+            <View style={{ width: 24 }} />
+          </View>
 
-        <FlatList
-          data={medications}
-          keyExtractor={(item) => item.med_id.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 20 }}
-        />
+          {/* MEMBER LABEL */}
+          {activeMember && (
+            <Text style={styles.memberLabel}>
+              Viewing {activeMember.name}'s medications
+            </Text>
+          )}
 
+          {loading ? (
+            <ActivityIndicator
+              color="#29A9F8"
+              size="large"
+              style={{ marginTop: 40 }}
+            />
+          ) : (
+            <>
+              {/* MED COLUMNS */}
+              <View style={styles.card}>
+                <View style={styles.row}>
+                  <View style={styles.column}>
+                    <Text style={styles.sectionTitle}>Regular Meds</Text>
+                    {regularMeds.length === 0 ? (
+                      <Text style={styles.empty}>None</Text>
+                    ) : (
+                      regularMeds.map(renderMed)
+                    )}
+                  </View>
+
+                  <View style={styles.column}>
+                    <Text style={styles.sectionTitle}>Temporary Meds</Text>
+                    {tempMeds.length === 0 ? (
+                      <Text style={styles.empty}>None</Text>
+                    ) : (
+                      tempMeds.map(renderMed)
+                    )}
+                  </View>
+                </View>
+              </View>
+
+              {/* BUTTONS */}
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => router.push("/(tabs)/edit-medications" as any)}
+              >
+                <Text style={styles.buttonText}>Edit Medications</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => router.push("/(tabs)/reminders" as any)}
+              >
+                <Text style={styles.buttonText}>Set Reminders</Text>
+              </TouchableOpacity>
+
+              {/* DDI WARNING */}
+              {interaction && (
+                <View style={styles.warningBox}>
+                  <Ionicons name="warning" size={18} color="#b91c1c" />
+                  <Text style={styles.warningText}>{interaction}</Text>
+                </View>
+              )}
+            </>
+          )}
+
+        </ScrollView>
+
+        <ChatBubble />
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#eaf6ff",
-    padding: 20,
+  container: { flex: 1, backgroundColor: "#eaf6ff", padding: 20 },
+
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
   },
 
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 15,
-    color: "#1f2937",
-  },
+  title: { fontSize: 22, fontWeight: "700", color: "#1f2937" },
 
+  memberLabel: {
+    fontSize: 13,
+    color: "#6b7280",
+    marginBottom: 16,
+  },
 
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 16,
+    marginBottom: 16,
+    elevation: 3,
+  },
+
+  row: { flexDirection: "row", justifyContent: "space-between" },
+
+  column: { width: "48%" },
+
+  sectionTitle: { fontWeight: "600", marginBottom: 10, color: "#1f2937" },
+
+  pill: {
+    backgroundColor: "#f3f4f6",
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 10,
+    alignItems: "center",
+  },
+
+  pillText: { fontSize: 13, color: "#1f2937" },
+
+  empty: { fontSize: 13, color: "#9ca3af" },
+
+  button: {
+    backgroundColor: "#29A9F8",
+    padding: 14,
+    borderRadius: 12,
+    alignItems: "center",
     marginBottom: 12,
-
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-
-    elevation: 4,
   },
 
-  medName: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 6,
-    color: "#111827",
+  buttonText: { color: "#fff", fontWeight: "600" },
+
+  warningBox: {
+    flexDirection: "row",
+    backgroundColor: "#fde2e2",
+    padding: 14,
+    borderRadius: 12,
+    marginTop: 8,
+    alignItems: "flex-start",
+    gap: 8,
   },
 
-  detail: {
-    fontSize: 14,
-    color: "#374151",
-  },
-
-  deleteBtn: {
-    marginTop: 10,
-    alignSelf: "flex-end",
-  },
-
-  deleteText: {
-    color: "red",
-    fontWeight: "600",
-  },
+  warningText: { color: "#b91c1c", fontWeight: "500", flex: 1 },
 });
