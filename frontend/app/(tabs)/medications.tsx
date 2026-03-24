@@ -1,126 +1,93 @@
-import { useState, useCallback } from "react";
 import {
-  ScrollView,
   StyleSheet,
   Text,
   View,
+  FlatList,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useFocusEffect } from "expo-router";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import ChatBubble from "../../components/ChatBubble";
-import { familyMembers } from "../../constants/familyData";
-import { getSelectedMember } from "../../constants/selectedMember";
+import { useEffect, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
 
-export default function MedicationsScreen() {
-  const router = useRouter();
-  const [meds, setMeds] = useState<any[]>([]);
+const API_URL = "YOUR_BACKEND_URL"; 
 
-  useFocusEffect(
-    useCallback(() => {
-      const memberId = getSelectedMember();
-      const member = familyMembers.find((m) => m.id === memberId);
+export default function Medications() {
+  const { memberId } = useLocalSearchParams();
+  const [medications, setMedications] = useState<any[]>([]);
 
-      if (member) {
-        setMeds(member.medications || []);
-      } else {
-        setMeds([]);
-      }
-    }, [])
+  const fetchMedications = async () => {
+    try {
+      const res = await fetch(`${API_URL}/medications/${memberId}`, {
+        headers: {
+          "x-user-id": "1", 
+        },
+      });
+
+      const data = await res.json();
+      setMedications(data);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Failed to load medications");
+    }
+  };
+
+  useEffect(() => {
+    if (memberId) fetchMedications();
+  }, [memberId]);
+
+
+  const handleDelete = async (medId: number) => {
+    try {
+      await fetch(`${API_URL}/medications/${medId}`, {
+        method: "DELETE",
+        headers: {
+          "x-user-id": "1",
+        },
+      });
+
+      
+      fetchMedications();
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Failed to delete medication");
+    }
+  };
+
+  const renderItem = ({ item }: any) => (
+    <View style={styles.card}>
+      <Text style={styles.medName}>{item.med_name}</Text>
+
+      {item.dosage && (
+        <Text style={styles.detail}>Dose: {item.dosage}</Text>
+      )}
+      {item.frequency && (
+        <Text style={styles.detail}>Frequency: {item.frequency}</Text>
+      )}
+
+      {/* DELETE BUTTON */}
+      <TouchableOpacity
+        style={styles.deleteBtn}
+        onPress={() => handleDelete(item.med_id)}
+      >
+        <Text style={styles.deleteText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
   );
-
-  const regular = meds.filter((m) => m.type === "regular");
-  const temporary = meds.filter((m) => m.type === "temporary");
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <View style={{ flex: 1 }}>
-        <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }}>
+      <View style={styles.container}>
 
-          {/* HEADER */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={24} color="#1f2937" />
-            </TouchableOpacity>
+        <Text style={styles.title}>Medications</Text>
 
-            <Text style={styles.title}>Medications</Text>
+        <FlatList
+          data={medications}
+          keyExtractor={(item) => item.med_id.toString()}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        />
 
-            <View style={{ width: 24 }} />
-          </View>
-
-          {/* 🔥 MAIN CARD */}
-          <View style={styles.card}>
-
-            {/* HEADERS */}
-            <View style={styles.topRow}>
-              <Text style={styles.columnTitle}>Regular Meds</Text>
-              <Text style={styles.columnTitle}>Temporary Meds</Text>
-            </View>
-
-            {/* SCROLLABLE AREA */}
-            <ScrollView
-              style={styles.scrollArea}
-              showsVerticalScrollIndicator={true}
-            >
-              {Array.from({
-                length: Math.max(regular.length, temporary.length),
-              }).map((_, i) => (
-                <View key={i} style={styles.row}>
-
-                  {/* LEFT */}
-                  <View style={styles.column}>
-                    {regular[i] && (
-                      <View style={styles.pill}>
-                        <Text style={styles.pillText}>
-                          {regular[i].name}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* RIGHT */}
-                  <View style={styles.column}>
-                    {temporary[i] && (
-                      <View style={styles.pill}>
-                        <Text style={styles.pillText}>
-                          {temporary[i].name}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* BUTTONS */}
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => router.push("/(tabs)/edit-medications")}
-          >
-            <Text style={styles.buttonText}>Edit Medications</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => router.push("/(tabs)/reminders")}
-          >
-            <Text style={styles.buttonText}>Set Reminders</Text>
-          </TouchableOpacity>
-
-          {/* WARNING */}
-          <View style={styles.warningBox}>
-            <Ionicons name="warning" size={18} color="#e63946" />
-            <Text style={styles.warningText}>
-              The drugs Warfarin and Ibuprofen have a high risk of interaction.
-            </Text>
-          </View>
-
-        </ScrollView>
-
-        <ChatBubble />
       </View>
     </SafeAreaView>
   );
@@ -133,92 +100,47 @@ const styles = StyleSheet.create({
     padding: 20,
   },
 
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-
   title: {
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 15,
     color: "#1f2937",
   },
+
 
   card: {
     backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 12,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+
     elevation: 4,
   },
 
-  topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-
-  columnTitle: {
-    width: "48%",
-    textAlign: "center",
-    fontWeight: "700",
-    color: "#1f2937",
-  },
-
-  scrollArea: {
-    maxHeight: 260,
-  },
-
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-
-  column: {
-    width: "48%",
-  },
-
-  pill: {
-    backgroundColor: "#f3f4f6",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-
-  pillText: {
-    color: "#1f2937",
-    fontWeight: "500",
-  },
-
-  button: {
-    backgroundColor: "#29A9F8",
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    marginBottom: 12,
-  },
-
-  buttonText: {
-    color: "#ffffff",
+  medName: {
+    fontSize: 16,
     fontWeight: "600",
-    fontSize: 15,
+    marginBottom: 6,
+    color: "#111827",
   },
 
-  warningBox: {
-    flexDirection: "row",
-    backgroundColor: "#fdecea",
-    padding: 14,
-    borderRadius: 12,
-    alignItems: "center",
+  detail: {
+    fontSize: 14,
+    color: "#374151",
+  },
+
+  deleteBtn: {
     marginTop: 10,
+    alignSelf: "flex-end",
   },
 
-  warningText: {
-    color: "#b91c1c",
-    marginLeft: 8,
-    flex: 1,
+  deleteText: {
+    color: "red",
+    fontWeight: "600",
   },
 });
