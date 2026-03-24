@@ -1,69 +1,33 @@
-import { ScrollView, StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import * as Linking from "expo-linking";
 
-export default function MedicalSummary() {
+const API_URL = "YOUR_NGROK_OR_BACKEND_URL";
+
+export default function GenerateSummary() {
   const router = useRouter();
+  const { memberId } = useLocalSearchParams(); 
 
-  // 🔹 Simulated OCR extracted structured data (FR4 → input)
-  const medicalData = {
-    name: "Archana A",
-    age: 21,
-    bloodGroup: "A+",
-    medications: [
-      { name: "Ibuprofen", dosage: "200 mg" },
-      { name: "Vitamin D", dosage: "1000 IU" },
-    ],
-    test: {
-      name: "Blood Test",
-      date: "Feb 2026",
-      hemoglobin: 11.2,
-    },
-    allergies: "None reported",
-  };
+  const handleGeneratePDF = async () => {
+    try {
+      const url = `${API_URL}/summary/generate/${memberId}`;
 
-  // 🔹 RULE-BASED SUMMARY (FR6 — NO AI)
-  const generateSummary = () => {
-    let summary = "";
+      
+      await Linking.openURL(url);
 
-    // Patient Info
-    summary += `Patient ${medicalData.name}, aged ${medicalData.age}, has blood group ${medicalData.bloodGroup}. `;
-
-    // Test Evaluation (FR5 logic reused)
-    if (medicalData.test.hemoglobin < 12) {
-      summary += `Recent laboratory analysis shows hemoglobin level of ${medicalData.test.hemoglobin} g/dL, which is below the normal range. `;
-    } else {
-      summary += `Recent laboratory results are within normal limits. `;
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Failed to generate summary");
     }
-
-    // Medications
-    if (medicalData.medications.length > 0) {
-      const meds = medicalData.medications
-        .map((m) => `${m.name}`)
-        .join(", ");
-      summary += `Current medications include ${meds}. `;
-    }
-
-    // Allergies
-    summary += `Reported allergies: ${medicalData.allergies}. `;
-
-    // Conclusion
-    summary += `No critical medical risks identified based on available records.`;
-
-    return summary;
   };
-
-  const summaryText = generateSummary();
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <ScrollView
-        style={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.container}>
 
-        {/* 🔥 HEADER */}
+        {/* HEADER */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#1f2937" />
@@ -74,22 +38,23 @@ export default function MedicalSummary() {
           <View style={{ width: 24 }} />
         </View>
 
-        {/* 🧠 SUMMARY CARD */}
+        {/* BUTTON CARD */}
         <View style={styles.card}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>Generated Summary</Text>
-          </View>
+          <Text style={styles.infoText}>
+            Generate a complete medical summary PDF for this member.
+          </Text>
 
-          <Text style={styles.summaryText}>{summaryText}</Text>
+          <TouchableOpacity style={styles.button} onPress={handleGeneratePDF}>
+            <Text style={styles.buttonText}>Generate PDF</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* ⚠️ NOTE */}
+        {/* NOTE */}
         <Text style={styles.note}>
-          This summary is generated using extracted medical data and
-          rule-based evaluation. It is intended for informational use only.
+          This summary is generated using stored medical data and rule-based evaluation.
         </Text>
 
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -99,14 +64,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#eaf6ff",
     padding: 20,
+    justifyContent: "center",
   },
 
-  /* HEADER */
   header: {
+    position: "absolute",
+    top: 20,
+    left: 20,
+    right: 20,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 15,
   },
 
   title: {
@@ -115,12 +83,10 @@ const styles = StyleSheet.create({
     color: "#1f2937",
   },
 
-  /* CARD */
   card: {
     backgroundColor: "#ffffff",
     borderRadius: 16,
-    padding: 18,
-    marginBottom: 15,
+    padding: 20,
 
     shadowColor: "#000",
     shadowOpacity: 0.08,
@@ -130,33 +96,30 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
-  /* BADGE */
-  badge: {
-    backgroundColor: "#29A9F8",
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-
-  badgeText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-
-  /* TEXT */
-  summaryText: {
+  infoText: {
     fontSize: 14,
     color: "#374151",
-    lineHeight: 22,
+    marginBottom: 15,
+    textAlign: "center",
+  },
+
+  button: {
+    backgroundColor: "#29A9F8",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 
   note: {
     fontSize: 12,
     color: "#6b7280",
-    marginTop: 10,
+    marginTop: 15,
     textAlign: "center",
   },
 });
