@@ -22,20 +22,37 @@ export default function HomeScreen() {
   const selectedId = getSelectedMember();
   const selected = familyMembers.find((m) => m.id === selectedId);
 
-  const activities = [
-    {
-      id: "1",
-      type: "Test Result",
-      text: "Blood test updated",
-      date: "05 Feb 2026",
-    },
-    {
-      id: "2",
+// Get real activities from selected member's data
+const getRecentActivities = () => {
+  if (!selected) return [];
+  
+  const activitiesList = [];
+  
+  // Show medications if any exist
+  if (selected.medications && selected.medications.length > 0) {
+    const lastMed = selected.medications[selected.medications.length - 1];
+    activitiesList.push({
+      id: "med1",
       type: "Medication",
-      text: "Ibuprofen dosage changed",
-      date: "07 Feb 2026",
-    },
-  ];
+      text: `${lastMed.name} added`,
+      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    });
+  }
+  
+  // Add placeholder if no activities
+  if (activitiesList.length === 0) {
+    activitiesList.push({
+      id: "placeholder",
+      type: "Info",
+      text: "No recent activity",
+      date: "-"
+    });
+  }
+  
+  return activitiesList;
+};
+
+const activities = getRecentActivities();
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -109,7 +126,7 @@ export default function HomeScreen() {
               </Text>
 
               <Text style={styles.info}>
-                Emergency Contact: Ajeesh A
+                 Emergency Contact: Not set
               </Text>
             </View>
           </View>
