@@ -1,3 +1,4 @@
+
 import {
   StyleSheet,
   Text,
@@ -33,11 +34,11 @@ export default function Medications() {
       );
       const data = await res.json();
 
-      
       setRegularMeds(data.filter((m: any) => !m.end_date));
       setTempMeds(data.filter((m: any) => m.end_date));
 
-      checkInteractions(data);
+     
+      await checkInteractions();
     } catch (err) {
       Alert.alert("Error", "Failed to load medications");
     } finally {
@@ -45,30 +46,19 @@ export default function Medications() {
     }
   };
 
-  const checkInteractions = async (meds: any[]) => {
+  const checkInteractions = async () => {
     try {
-      const names = meds.map((m: any) => m.med_name);
-      if (names.length < 2) {
-        setInteraction(null);
-        return;
-      }
-
-      const res = await fetch(`${API_BASE}/api/ddi/check`, {
+      const res = await fetch(`${API_BASE}/api/ddi/check/${userId}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-id": String(userId),
-        },
-        body: JSON.stringify({ medications: names }),
+        headers: { "x-user-id": String(userId) },
       });
       const data = await res.json();
-      setInteraction(data.warning ?? null);
+      setInteraction(data.warningMessage ?? null);
     } catch (err) {
       console.error("DDI check error:", err);
     }
   };
 
-  
   useFocusEffect(
     useCallback(() => {
       fetchMedications();
@@ -88,8 +78,6 @@ export default function Medications() {
           style={styles.container}
           contentContainerStyle={{ paddingBottom: 120 }}
         >
-
-          {/* HEADER */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()}>
               <Ionicons name="arrow-back" size={24} color="#1f2937" />
@@ -98,7 +86,6 @@ export default function Medications() {
             <View style={{ width: 24 }} />
           </View>
 
-          {/* MEMBER LABEL */}
           {activeMember && (
             <Text style={styles.memberLabel}>
               Viewing {activeMember.name}'s medications
@@ -106,14 +93,9 @@ export default function Medications() {
           )}
 
           {loading ? (
-            <ActivityIndicator
-              color="#29A9F8"
-              size="large"
-              style={{ marginTop: 40 }}
-            />
+            <ActivityIndicator color="#29A9F8" size="large" style={{ marginTop: 40 }} />
           ) : (
             <>
-              {/* MED COLUMNS */}
               <View style={styles.card}>
                 <View style={styles.row}>
                   <View style={styles.column}>
@@ -136,7 +118,6 @@ export default function Medications() {
                 </View>
               </View>
 
-              {/* BUTTONS */}
               <TouchableOpacity
                 style={styles.button}
                 onPress={() => router.push("/(tabs)/edit-medications" as any)}
@@ -151,7 +132,6 @@ export default function Medications() {
                 <Text style={styles.buttonText}>Set Reminders</Text>
               </TouchableOpacity>
 
-              {/* DDI WARNING */}
               {interaction && (
                 <View style={styles.warningBox}>
                   <Ionicons name="warning" size={18} color="#b91c1c" />
@@ -160,7 +140,6 @@ export default function Medications() {
               )}
             </>
           )}
-
         </ScrollView>
 
         <ChatBubble />
@@ -171,22 +150,14 @@ export default function Medications() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#eaf6ff", padding: 20 },
-
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 6,
   },
-
   title: { fontSize: 22, fontWeight: "700", color: "#1f2937" },
-
-  memberLabel: {
-    fontSize: 13,
-    color: "#6b7280",
-    marginBottom: 16,
-  },
-
+  memberLabel: { fontSize: 13, color: "#6b7280", marginBottom: 16 },
   card: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -194,13 +165,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     elevation: 3,
   },
-
   row: { flexDirection: "row", justifyContent: "space-between" },
-
   column: { width: "48%" },
-
   sectionTitle: { fontWeight: "600", marginBottom: 10, color: "#1f2937" },
-
   pill: {
     backgroundColor: "#f3f4f6",
     padding: 10,
@@ -208,11 +175,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignItems: "center",
   },
-
   pillText: { fontSize: 13, color: "#1f2937" },
-
   empty: { fontSize: 13, color: "#9ca3af" },
-
   button: {
     backgroundColor: "#29A9F8",
     padding: 14,
@@ -220,9 +184,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-
   buttonText: { color: "#fff", fontWeight: "600" },
-
   warningBox: {
     flexDirection: "row",
     backgroundColor: "#fde2e2",
@@ -232,6 +194,5 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 8,
   },
-
   warningText: { color: "#b91c1c", fontWeight: "500", flex: 1 },
 });
