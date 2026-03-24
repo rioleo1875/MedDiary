@@ -110,7 +110,7 @@ const activities = getRecentActivities();
           <Text style={styles.sectionTitle}>Medical ID</Text>
 
           <View style={styles.card}>
-            <Image source={Images.avatar} style={styles.avatar} />
+            {/* <Image source={Images.avatar} style={styles.avatar} /> */}
 
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>
