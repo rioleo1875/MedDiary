@@ -478,6 +478,7 @@ export default function TestScreen() {
         <ChatBubble />
       </View>
     </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
