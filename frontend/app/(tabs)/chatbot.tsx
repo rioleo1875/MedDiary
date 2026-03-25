@@ -8,15 +8,18 @@ import {
   TouchableOpacity,
   View,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
+import { API_URL } from "../../constants/api";
 
 export default function ChatbotScreen() {
   const router = useRouter();
 
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   const [messages, setMessages] = useState([
@@ -26,57 +29,41 @@ export default function ChatbotScreen() {
     },
   ]);
 
-  // 🔹 Rule-based data (SRS compliant)
-  const data = {
-    name: "Archana A",
-    blood: "A+",
-    medications: ["Ibuprofen", "Vitamin D"],
-    test: "Blood test done in Feb 2026",
-    emergency: "Ajeesh A",
-  };
+  const sendMessage = async () => {
+    if (!message.trim() || loading) return;
 
-  // 🔹 Rule-based chatbot (NO AI)
-  const getResponse = (text: string) => {
-    const query = text.toLowerCase();
-
-    if (query.includes("blood")) {
-      return `Your blood group is ${data.blood}.`;
-    }
-
-    if (query.includes("medicine") || query.includes("medication")) {
-      return `You are taking ${data.medications.join(", ")}.`;
-    }
-
-    if (query.includes("test")) {
-      return `Recent test: ${data.test}.`;
-    }
-
-    if (query.includes("emergency")) {
-      return `Emergency contact: ${data.emergency}.`;
-    }
-
-    if (query.includes("name")) {
-      return `Your name is ${data.name}.`;
-    }
-
-    return "I can answer questions related to your medical records.";
-  };
-
-  const sendMessage = () => {
-    if (!message.trim()) return;
-
-    const newMessages = [
-      ...messages,
-      { from: "user", text: message },
-      { from: "bot", text: getResponse(message) },
-    ];
-
-    setMessages(newMessages);
+    // Add user message
+    const userMessage = { from: "user", text: message };
+    setMessages(prev => [...prev, userMessage]);
     setMessage("");
+    setLoading(true);
 
-    setTimeout(() => {
-      scrollRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    try {
+      // Send to backend
+      const response = await fetch(`${API_URL}/api/chatbot/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: userMessage.text }),
+      });
+
+      const data = await response.json();
+      
+      // Add bot response
+      setMessages(prev => [...prev, { from: "bot", text: data.reply }]);
+    } catch (error) {
+      console.error("Chatbot error:", error);
+      setMessages(prev => [...prev, { 
+        from: "bot", 
+        text: "Sorry, I'm having trouble connecting. Please try again later." 
+      }]);
+    } finally {
+      setLoading(false);
+      setTimeout(() => {
+        scrollRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
   };
 
   return (
@@ -87,7 +74,7 @@ export default function ChatbotScreen() {
       >
         <View style={styles.container}>
 
-          {/* 🔥 HEADER */}
+          {/* HEADER */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()}>
               <Ionicons name="arrow-back" size={24} color="#1f2937" />
@@ -98,7 +85,7 @@ export default function ChatbotScreen() {
             <View style={{ width: 24 }} />
           </View>
 
-          {/* 🔥 CHAT AREA */}
+          {/* CHAT AREA */}
           <ScrollView
             ref={scrollRef}
             style={styles.chatArea}
@@ -120,9 +107,15 @@ export default function ChatbotScreen() {
                 </Text>
               </View>
             ))}
+            
+            {loading && (
+              <View style={styles.botMsg}>
+                <ActivityIndicator color="#29A9F8" size="small" />
+              </View>
+            )}
           </ScrollView>
 
-          {/* 🔥 INPUT */}
+          {/* INPUT */}
           <View style={styles.inputArea}>
             <TextInput
               value={message}
@@ -130,9 +123,14 @@ export default function ChatbotScreen() {
               placeholder="Type your message..."
               placeholderTextColor="#9ca3af"
               style={styles.input}
+              editable={!loading}
             />
 
-            <TouchableOpacity style={styles.sendBtn} onPress={sendMessage}>
+            <TouchableOpacity 
+              style={styles.sendBtn} 
+              onPress={sendMessage}
+              disabled={loading}
+            >
               <Ionicons name="send" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -150,7 +148,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
 
-  /* 🔥 HEADER */
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -165,7 +162,6 @@ const styles = StyleSheet.create({
     color: "#1f2937",
   },
 
-  /* CHAT */
   chatArea: {
     flex: 1,
     marginTop: 10,
@@ -197,7 +193,6 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
 
-  /* INPUT */
   inputArea: {
     flexDirection: "row",
     alignItems: "center",
