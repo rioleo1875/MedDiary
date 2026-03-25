@@ -4,7 +4,7 @@ FROM node:18-alpine
 # Install system dependencies needed for Tesseract OCR
 RUN apk add --no-cache \
     tesseract \
-    tesseract-ocr-data-eng \
+    tesseract-data-eng \
     poppler-utils \
     python3 \
     make \
@@ -17,15 +17,7 @@ RUN apk add --no-cache \
     pixman-dev \
     pangomm-dev \
     libjpeg-turbo-dev \
-    freetype-dev \
-    cairo \
-    jpeg \
-    pango \
-    giflib \
-    pixman \
-    pangomm \
-    libjpeg-turbo \
-    freetype
+    freetype-dev
 
 # Set working directory
 WORKDIR /app
