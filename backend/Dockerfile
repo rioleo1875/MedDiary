@@ -1,5 +1,5 @@
-# Use Node.js 20 LTS with Ubuntu base
-FROM node:20-bullseye
+# Use Node.js 18 LTS with Ubuntu base
+FROM node:18-bullseye
 
 # Install system dependencies needed for Tesseract OCR
 RUN apt-get update && \
@@ -17,9 +17,6 @@ COPY package*.json ./
 
 # Install Node.js dependencies
 RUN npm ci --only=production
-
-# Verify pdf-parse installation
-RUN node -e "console.log('Testing pdf-parse...'); require('pdf-parse'); console.log('pdf-parse installed successfully')"
 
 # Copy application code
 COPY . .
