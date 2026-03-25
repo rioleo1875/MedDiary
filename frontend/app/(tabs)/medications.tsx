@@ -136,16 +136,6 @@ export default function Medications() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.button, checkingInteraction && { opacity: 0.6 }]}
-                onPress={checkInteractions} disabled={checkingInteraction}
-              >
-                <Ionicons name="medical" size={16} color="#fff" style={{ marginRight: 6 }} />
-                <Text style={styles.buttonText}>
-                  {checkingInteraction ? "Checking..." : "Check Interactions"}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
                 style={styles.button}
                 onPress={() => router.push("/(tabs)/reminders" as any)}
               >

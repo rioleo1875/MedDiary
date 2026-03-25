@@ -257,22 +257,13 @@ export default function TestScreen() {
       
       let normalMin = 0;
       let normalMax = 100;
-      let status = "normal";
       
       if (testKey && testDict[testKey]) {
         normalMin = testDict[testKey].normal_min;
         normalMax = testDict[testKey].normal_max;
-        
-        // Determine status based on value
-        const value = parseFloat(newTestValue);
-        if (value < testDict[testKey].normal_min || value > testDict[testKey].normal_max) {
-          status = "abnormal";
-        } else if (value < testDict[testKey].normal_min * 0.9 || value > testDict[testKey].normal_max * 1.1) {
-          status = "moderate";
-        }
       }
       
-      const res = await fetch(`${API_BASE}/api/tests`, {
+      const res = await fetch(`${API_BASE}/api/tests/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-user-id": String(userId) },
         body: JSON.stringify({
@@ -282,7 +273,6 @@ export default function TestScreen() {
           unit: newTestUnit || null,
           normal_min: normalMin,
           normal_max: normalMax,
-          status: status,
           test_date: new Date().toISOString().split('T')[0]
         }),
       });
