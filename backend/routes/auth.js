@@ -5,17 +5,19 @@ const nodemailer = require("nodemailer");
 
 const otpStore = {};
 
-// Create transporter only if credentials exist
+/// Create transporter only if credentials exist
 let transporter = null;
 if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
   transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // TLS
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
   });
-  console.log("✅ Email configured");
+  console.log("✅ Email configured with TLS");
 } else {
   console.log("⚠️ Email not configured - OTP will be logged");
 }
