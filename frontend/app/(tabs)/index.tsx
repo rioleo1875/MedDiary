@@ -9,32 +9,61 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useEffect, useState } from "react";
 import { Images } from "../../constants/Images";
-import { useMember } from "../../context/MemberContext";
+import { useMember, API_BASE } from "../../context/MemberContext";
 import { useAuth } from "../../context/AuthContext";
+
+type Activity = {
+  id: string | number;
+  type: string;
+  text: string;
+  status: string;
+  date: string;
+};
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { activeMember } = useMember();
+  const { activeMember, userId } = useMember();
   const { logout } = useAuth();
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const getRecentActivities = () => {
-    if (!activeMember) return [];
-    
-    const activitiesList = [];
-    
-    // Add placeholder for now - we'll fetch real medications from API
-    activitiesList.push({
-      id: "placeholder",
-      type: "Info",
-      text: "No recent activity",
-      date: "-"
-    });
-    
-    return activitiesList;
-  };
+  useEffect(() => {
+    const fetchRecentActivity = async () => {
+      if (!activeMember) {
+        setActivities([]);
+        setLoading(false);
+        return;
+      }
 
-  const activities = getRecentActivities();
+      try {
+        const response = await fetch(
+          `${API_BASE}/api/activity/${activeMember.member_id}?limit=5`,
+          {
+            headers: {
+              "x-user-id": String(userId),
+            },
+          }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          setActivities(data);
+        } else {
+          console.error("Failed to fetch activity");
+          setActivities([]);
+        }
+      } catch (error) {
+        console.error("Error fetching activity:", error);
+        setActivities([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecentActivity();
+  }, [activeMember, userId]);
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -140,22 +169,28 @@ export default function HomeScreen() {
           <View style={styles.activityContainer}>
             <Text style={styles.sectionTitle}>Recent Activity</Text>
 
-            {activities.map((item) => (
-              <View key={item.id} style={styles.activityItem}>
-                <View>
-                  <Text style={styles.activityType}>
-                    {item.type}
-                  </Text>
-                  <Text style={styles.activityText}>
-                    {item.text}
+            {loading ? (
+              <Text style={styles.emptyActivity}>Loading recent activity...</Text>
+            ) : activities.length === 0 ? (
+              <Text style={styles.emptyActivity}>No recent activity</Text>
+            ) : (
+              activities.map((item: Activity) => (
+                <View key={item.id} style={styles.activityItem}>
+                  <View>
+                    <Text style={styles.activityType}>
+                      {item.type}
+                    </Text>
+                    <Text style={styles.activityText}>
+                      {item.text}
+                    </Text>
+                  </View>
+
+                  <Text style={styles.activityDate}>
+                    {item.date}
                   </Text>
                 </View>
-
-                <Text style={styles.activityDate}>
-                  {item.date}
-                </Text>
-              </View>
-            ))}
+              ))
+            )}
           </View>
 
           {/* EMERGENCY */}
@@ -320,6 +355,14 @@ const styles = StyleSheet.create({
   activityDate: {
     fontSize: 12,
     color: "#6b7280",
+  },
+
+  emptyActivity: {
+    fontSize: 14,
+    color: "#6b7280",
+    textAlign: "center",
+    fontStyle: "italic",
+    padding: 10,
   },
 
   emergencyBar: {

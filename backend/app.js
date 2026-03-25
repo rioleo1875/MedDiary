@@ -56,4 +56,8 @@ app.use("/api/reminders", reminderRoute);
 const immunizationRoute = require("./routes/immunizations");
 app.use("/api/immunizations", immunizationRoute);
 
+// Activity route
+const activityRoute = require("./routes/activity");
+app.use("/api/activity", activityRoute);
+
 module.exports = app;
