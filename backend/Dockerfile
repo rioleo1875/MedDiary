@@ -3,9 +3,8 @@ FROM node:18-alpine
 
 # Install system dependencies needed for Tesseract OCR
 RUN apk add --no-cache \
-    tesseract-ocr \
-    tesseract-ocr-eng \
-    pdf2image \
+    tesseract \
+    tesseract-ocr-data-eng \
     poppler-utils \
     python3 \
     make \
