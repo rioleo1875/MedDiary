@@ -72,29 +72,23 @@ router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
         console.log("PDF parser failed");
       }
 
-      if (shouldFallbackToOCR(text)) {
+      console.log("Switching to OCR fallback");
 
-        console.log("Switching to OCR fallback");
+      const imagePaths = await convertPDFToImages(filePath);
 
-        const imagePaths = await convertPDFToImages(filePath);
+      let pages = [];
 
-        let pages = [];
+      for (const img of imagePaths) {
 
-        for (const img of imagePaths) {
+        const result = await Tesseract.recognize(img, "eng");
 
-          const result = await Tesseract.recognize(img, "eng");
+        pages.push(result.data.text);
 
-          pages.push(result.data.text);
+        try { fs.unlinkSync(img); } catch {}
 
-          try { fs.unlinkSync(img); } catch {}
-
-        }
-
-        text = pages.join("\n");
-
-      } else {
-        console.log("Using parsed PDF text, skipping OCR fallback");
       }
+
+      text = pages.join("\n");
 
     } else {
 

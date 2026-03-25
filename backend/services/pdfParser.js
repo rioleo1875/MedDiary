@@ -1,8 +1,8 @@
 global.DOMMatrix = require("@thednp/dommatrix"); 
 const fs = require("fs");
-const pdfjsLib = require("pdfjs-dist/legacy/build/pdf.js");
 
 async function extractPDFText(filePath) {
+  const pdfjsLib = await import("pdfjs-dist");
   try {
     const dataBuffer = fs.readFileSync(filePath);
     const data = new Uint8Array(dataBuffer);

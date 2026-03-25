@@ -1,0 +1,16 @@
+# Docker
+node_modules
+npm-debug.log
+
+# Environment
+.env
+
+# Uploads
+uploads/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
