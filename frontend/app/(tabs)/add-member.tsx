@@ -7,10 +7,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { familyMembers, saveFamily } from "../../constants/familyData"; // ✅ FIXED
+import { useMember, API_BASE } from "../../context/MemberContext";
 
 export default function AddMemberScreen() {
   const router = useRouter();
@@ -40,47 +41,52 @@ export default function AddMemberScreen() {
       relation === "Other" ? customRelation : relation;
 
     if (!name || !age || !gender || !blood || !finalRelation) {
-      alert("Fill all fields");
+      Alert.alert("Error", "Please fill all fields");
       return;
     }
 
-    let updatedMembers = [];
-
-    if (parsedMember) {
-      updatedMembers = familyMembers.map((m) =>
-        m.id === parsedMember.id
-          ? {
-              ...m,
-              name,
-              age: Number(age),
-              gender,
-              blood,
-              relation: finalRelation,
-            }
-          : m
-      );
-    } else {
-      const newMember = {
-        id: Date.now().toString(),
+    try {
+      const memberData = {
         name,
         age: Number(age),
         gender,
-        blood,
+        blood_group: blood,
         relation: finalRelation,
-        medications: [],
-        reminders: [],
       };
 
-      updatedMembers = [...familyMembers, newMember];
+      let res;
+      if (parsedMember) {
+        // Update existing member
+        res = await fetch(`${API_BASE}/api/family/members/${parsedMember.member_id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-id": "1"
+          },
+          body: JSON.stringify(memberData)
+        });
+      } else {
+        // Add new member
+        res = await fetch(`${API_BASE}/api/family/members`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-id": "1"
+          },
+          body: JSON.stringify(memberData)
+        });
+      }
+
+      if (res.ok) {
+        Alert.alert("Success", parsedMember ? "Member updated successfully" : "Member added successfully");
+        router.back();
+      } else {
+        Alert.alert("Error", "Failed to save member");
+      }
+    } catch (error) {
+      console.error("Save member error:", error);
+      Alert.alert("Error", "Failed to save member");
     }
-
-   
-    familyMembers.length = 0;
-    familyMembers.push(...updatedMembers);
-
-    await saveFamily();
-
-    router.back();
   };
 
   return (

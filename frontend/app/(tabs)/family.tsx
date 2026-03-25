@@ -6,48 +6,49 @@ import {
   Text,
   View,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import ChatBubble from "../../components/ChatBubble";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { familyMembers } from "../../constants/familyData";
-import { setSelectedMember } from "../../constants/selectedMember";
+import { useMember, API_BASE } from "../../context/MemberContext";
 
 export default function FamilyScreen() {
   const router = useRouter();
+  const { members, activeMember, setActiveMember, refreshMembers } = useMember();
 
-  const [members, setMembers] = useState(familyMembers);
-
-  
-  const loadMembers = async () => {
-    const stored = await AsyncStorage.getItem("familyMembers");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-
-      familyMembers.length = 0;
-      familyMembers.push(...parsed);
-
-      setMembers(parsed);
-    }
-  };
-
-  
   useFocusEffect(
     useCallback(() => {
-      loadMembers();
-    }, [])
+      refreshMembers();
+    }, [refreshMembers])
   );
 
-  
-  const deleteMember = async (id: string) => {
-    const updated = members.filter((m) => m.id !== id);
-    setMembers(updated);
-
-    familyMembers.length = 0;
-    familyMembers.push(...updated);
-
-    await AsyncStorage.setItem("familyMembers", JSON.stringify(updated));
+  const deleteMember = async (memberId: number) => {
+    Alert.alert(
+      "Delete Member",
+      "Are you sure you want to delete this family member?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: async () => {
+          try {
+            const res = await fetch(`${API_BASE}/api/family/members/${memberId}`, {
+              method: "DELETE",
+              headers: { "x-user-id": "1" }
+            });
+            
+            if (res.ok) {
+              await refreshMembers();
+              Alert.alert("Success", "Family member deleted successfully");
+            } else {
+              Alert.alert("Error", "Failed to delete family member");
+            }
+          } catch (error) {
+            console.error("Delete member error:", error);
+            Alert.alert("Error", "Failed to delete family member");
+          }
+        }}
+      ]
+    );
   };
 
   return (
@@ -78,11 +79,11 @@ export default function FamilyScreen() {
           {/* MEMBERS */}
           {members.map((m) => (
             <TouchableOpacity
-              key={m.id}
-              style={styles.card}
-              onPress={() => {
-                setSelectedMember(m.id);
-                router.push("/(tabs)"); // ✅ FIXED HERE ONLY
+              key={m.member_id}
+              style={[styles.card, activeMember?.member_id === m.member_id && styles.activeCard]}
+              onPress={async () => {
+                await setActiveMember(m);
+                router.push("/(tabs)");
               }}
             >
 
@@ -93,7 +94,7 @@ export default function FamilyScreen() {
 
               <Text style={styles.info}>Age: {m.age}</Text>
               <Text style={styles.info}>Gender: {m.gender}</Text>
-              <Text style={styles.info}>Blood Group: {m.blood}</Text>
+              <Text style={styles.info}>Blood Group: {m.blood_group}</Text>
 
               <View style={styles.actions}>
                 <TouchableOpacity
@@ -107,7 +108,7 @@ export default function FamilyScreen() {
                   <Text style={styles.edit}>Edit</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => deleteMember(m.id)}>
+                <TouchableOpacity onPress={() => deleteMember(m.member_id)}>
                   <Text style={styles.delete}>Delete</Text>
                 </TouchableOpacity>
               </View>
@@ -162,6 +163,12 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 14,
     elevation: 4,
+  },
+
+  activeCard: {
+    backgroundColor: "#e0f2fe",
+    borderWidth: 2,
+    borderColor: "#29A9F8",
   },
 
   cardHeader: {

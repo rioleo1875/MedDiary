@@ -52,8 +52,15 @@ const verifyOtp = async () => {
     const data = await res.json();
 
     if (data.success) {
-      await login(email as string);
-      router.replace("/(tabs)");
+      console.log('OTP Screen: OTP verification successful, calling login...');
+      try {
+        await login(email as string);
+        console.log('OTP Screen: Login completed, navigating to tabs...');
+        router.replace("/(tabs)");
+      } catch (error) {
+        console.error('OTP Screen: Login failed:', error);
+        alert("Login failed. Please try again.");
+      }
     } else {
       alert("Invalid OTP");
       setOtp("");

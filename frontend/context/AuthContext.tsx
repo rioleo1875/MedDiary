@@ -45,11 +45,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (userEmail: string) => {
     try {
+      console.log('AuthContext: Starting login process for:', userEmail);
       await AsyncStorage.setItem('userEmail', userEmail);
       await AsyncStorage.setItem('isLoggedIn', 'true');
       setEmail(userEmail);
       setIsAuthenticated(true);
       setIsInitialized(true);
+      console.log('AuthContext: Login completed successfully');
     } catch (error) {
       console.error('Error saving auth:', error);
       throw error;
