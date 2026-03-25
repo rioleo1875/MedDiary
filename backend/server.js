@@ -1,14 +1,12 @@
+console.log("Starting server...");
+const express = require("express");
+const app = express();
 
-require("dotenv").config();
-
-const app = require("./app");
-
-const PORT = process.env.PORT || 3000;
-
-process.on("uncaughtException", (err) => {
-  console.error("Uncaught Error:", err);
+app.get("/", (req, res) => {
+  res.send("MedDiary Backend Working!");
 });
 
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
