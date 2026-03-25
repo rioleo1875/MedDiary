@@ -224,9 +224,10 @@ export default function TestScreen() {
           { text: "Cancel", style: "cancel" },
           { text: "Save Anyway", onPress: () => saveEdit(true) },
         ]);
-        return;
+      } else if (!res.ok) { 
+        Alert.alert("Error", data.error); 
+        return; 
       }
-      if (!res.ok) { Alert.alert("Error", data.error); return; }
       Alert.alert("Updated", "Test result updated");
       setEditingTest(null);
       await fetchTests();
@@ -234,6 +235,49 @@ export default function TestScreen() {
       Alert.alert("Error", "Failed to update");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const deleteTest = async (testId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/tests/${testId}`, {
+        method: "DELETE",
+        headers: { "x-user-id": String(userId) },
+      });
+      if (!res.ok) {
+        Alert.alert("Error", "Failed to delete test result");
+        return;
+      }
+      Alert.alert("Deleted", "Test result deleted");
+      await fetchTests();
+    } catch {
+      Alert.alert("Error", "Failed to delete");
+    }
+  };
+
+  const statusColor = (status: string) => {
+    switch (status) {
+      case "normal":
+        return "#34C759";
+      case "abnormal":
+        return "#FFC107";
+      case "critical":
+        return "#FF3737";
+      default:
+        return "#6b7280";
+    }
+  };
+
+  const statusLabel = (status: string) => {
+    switch (status) {
+      case "normal":
+        return "Normal";
+      case "abnormal":
+        return "Abnormal";
+      case "critical":
+        return "Critical";
+      default:
+        return "Unknown";
     }
   };
 
@@ -246,9 +290,15 @@ export default function TestScreen() {
 
     setAddingTest(true);
     try {
-      // Get test dictionary to determine normal ranges
-      const dictRes = await fetch(`${API_BASE}/api/tests/dictionary`);
-      const testDict = await dictRes.json();
+      // Use hardcoded test dictionary since API endpoint doesn't exist
+      const testDict: Record<string, { aliases: string[]; normal_min: number; normal_max: number }> = {
+        fbs: { aliases: ["fbs", "fasting blood sugar", "fasting glucose", "glucose", "blood sugar", "sugar"], normal_min: 70, normal_max: 100 },
+        rbs: { aliases: ["rbs", "random blood sugar", "random glucose"], normal_min: 70, normal_max: 140 },
+        hba1c: { aliases: ["hba1c", "a1c", "glycated hemoglobin"], normal_min: 4, normal_max: 5.6 },
+        tsh: { aliases: ["tsh", "thyroid stimulating hormone", "tsh 3rd generation"], normal_min: 0.4, normal_max: 4.5 },
+        t3: { aliases: ["t3", "triiodothyronine"], normal_min: 80, normal_max: 200 },
+        t4: { aliases: ["t4", "thyroxine"], normal_min: 5, normal_max: 12 },
+      };
       
       // Find matching test in dictionary
       const testKey = Object.keys(testDict).find(key => {
@@ -300,28 +350,7 @@ export default function TestScreen() {
     }
   };
 
-  // ── Delete ──────────────────────────────────────────────────
-  const deleteTest = (testId: number) => {
-    Alert.alert("Delete", "Remove this test result?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete", style: "destructive", onPress: async () => {
-          try {
-            await fetch(`${API_BASE}/api/tests/${testId}`, {
-              method: "DELETE", headers: { "x-user-id": String(userId) },
-            });
-            await fetchTests();
-          } catch { Alert.alert("Error", "Failed to delete"); }
-        },
-      },
-    ]);
-  };
-
-  const statusColor = (s: string) =>
-    s === "abnormal" ? "#e63946" : s === "moderate" ? "#f59e0b" : "#16a34a";
-  const statusLabel = (s: string) =>
-    s === "abnormal" ? "Abnormal" : s === "moderate" ? "Moderate" : "Normal";
-
+  // ... (rest of the code remains the same)
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
