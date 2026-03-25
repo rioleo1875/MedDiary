@@ -4,19 +4,30 @@ import { useRouter } from "expo-router";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 
 function AuthWrapper({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, checkAuth } = useAuth();
+  const { isAuthenticated, isInitialized, checkAuth } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
+    console.log('AuthWrapper: Checking auth...');
     checkAuth();
   }, [checkAuth]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    console.log('AuthWrapper: Auth state changed', { isInitialized, isAuthenticated });
+    // Only redirect if we're initialized and not authenticated
+    if (isInitialized && !isAuthenticated) {
+      console.log('AuthWrapper: Redirecting to login');
       router.replace("/auth/login");
     }
-  }, [isAuthenticated, router]);
+  }, [isInitialized, isAuthenticated, router]);
 
+  // Don't render anything until auth check is complete
+  if (!isInitialized) {
+    console.log('AuthWrapper: Not initialized yet');
+    return null;
+  }
+
+  console.log('AuthWrapper: Rendering children');
   return <>{children}</>;
 }
 
