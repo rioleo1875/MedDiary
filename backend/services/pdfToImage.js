@@ -1,31 +1,30 @@
-const pdf = require("pdf-poppler");
+const { fromPath } = require("pdf2pic");
 const path = require("path");
-const fs = require("fs");
 
 async function convertPDFToImages(filePath) {
-
-  const outDir = path.dirname(filePath);
-  const outPrefix = "page";
-
-  const opts = {
+  const convert = fromPath(filePath, {
+    density: 150,
+    saveFilename: "page",
+    savePath: path.dirname(filePath),
     format: "png",
-    out_dir: outDir,
-    out_prefix: outPrefix
-  };
+    width: 1240,
+    height: 1754,
+  });
 
-  console.log("Converting PDF to images...");
+  const pageCount = 5; 
+  const results = [];
 
-  await pdf.convert(filePath, opts);
+  for (let i = 1; i <= pageCount; i++) {
+    try {
+      const result = await convert(i);
+      if (result?.path) results.push(result.path);
+    } catch {
+      break; 
+    }
+  }
 
-  const files = fs.readdirSync(outDir);
-
-  const imageFiles = files
-    .filter(f => f.startsWith("page-") && f.endsWith(".png"))
-    .map(f => path.join(outDir, f));
-
-  console.log("Generated images:", imageFiles);
-
-  return imageFiles;
+  console.log("Generated images:", results);
+  return results;
 }
 
 module.exports = convertPDFToImages;
