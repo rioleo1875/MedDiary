@@ -1,25 +1,15 @@
-global.DOMMatrix = require("@thednp/dommatrix"); 
+global.DOMMatrix = require("@thednp/dommatrix");
+const pdfParseImport = require("pdf-parse");
+const pdfParse = pdfParseImport.default || pdfParseImport;
 const fs = require("fs");
 
 async function extractPDFText(filePath) {
-  const pdfjsLib = await import("pdfjs-dist");
   try {
     const dataBuffer = fs.readFileSync(filePath);
-    const data = new Uint8Array(dataBuffer);
 
-    const loadingTask = pdfjsLib.getDocument({ data });
-    const pdf = await loadingTask.promise;
+    const data = await pdfParse(dataBuffer);
 
-    let text = "";
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-
-      const pageText = content.items.map((item) => item.str).join(" ");
-      text += pageText + "\n";
-    }
-
+    let text = data.text || "";
 
     text = text
       .replace(/\r/g, "")
