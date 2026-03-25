@@ -31,7 +31,7 @@ export default function AddMemberScreen() {
       setName(parsedMember.name);
       setAge(String(parsedMember.age));
       setGender(parsedMember.gender);
-      setBlood(parsedMember.blood);
+      setBlood(parsedMember.blood_group || "");
       setRelation(parsedMember.relation || "");
     }
   }, []);

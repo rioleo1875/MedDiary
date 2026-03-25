@@ -17,11 +17,27 @@ export default function GenerateSummary() {
     }
 
     try {
-    
+      console.log('Summary: Generating PDF for member:', activeMember.member_id);
       const url = `${API_BASE}/api/summary/generate/${activeMember.member_id}?userId=${userId}`;
-      await Linking.openURL(url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'x-user-id': userId.toString(),
+          'Accept': 'application/pdf'
+        }
+      });
+
+      if (response.ok) {
+        console.log('Summary: PDF generation successful');
+        Alert.alert("Success", "PDF generated successfully!");
+      } else {
+        console.error('Summary: PDF generation failed:', response.status);
+        Alert.alert("Error", "Failed to generate PDF. Please try again.");
+      }
     } catch (err) {
-      Alert.alert("Error", "Failed to generate summary");
+      console.error('Summary: Error generating PDF:', err);
+      Alert.alert("Error", "Failed to generate summary. Please check your connection.");
     }
   };
 
