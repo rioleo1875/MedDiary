@@ -1,7 +1,16 @@
 const express = require("express");
 const multer = require("multer");
-const Tesseract = require("tesseract.js");
 const fs = require("fs");
+
+// Try to load Tesseract, but handle gracefully if it fails
+let Tesseract;
+try {
+  Tesseract = require("tesseract.js");
+  console.log("✅ Tesseract OCR loaded successfully");
+} catch (err) {
+  console.warn("⚠️ Tesseract OCR not available:", err.message);
+  console.warn("OCR functionality will be limited");
+}
 
 const parseLabReport = require("../services/parseLabReport");
 const extractPDFText = require("../services/pdfParser");
@@ -74,6 +83,13 @@ router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
 
       if (shouldFallbackToOCR(text)) {
 
+        if (!Tesseract) {
+          console.log("OCR not available on this platform");
+          return res.status(503).json({ 
+            error: "OCR not available on this platform. Please upload a PDF with extractable text." 
+          });
+        }
+
         console.log("Switching to OCR fallback");
 
         const imagePaths = await convertPDFToImages(filePath);
@@ -97,6 +113,11 @@ router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
       }
 
     } else {
+      if (!Tesseract) {
+        return res.status(503).json({ 
+          error: "OCR not available on this platform. Please upload a PDF with extractable text." 
+        });
+      }
 
       console.log("Running OCR on image");
 
