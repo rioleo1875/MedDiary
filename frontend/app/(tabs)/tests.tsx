@@ -248,11 +248,12 @@ export default function TestScreen() {
       const testDict = await dictRes.json();
       
       // Find matching test in dictionary
-      const testKey = Object.keys(testDict).find(key => 
-        testDict[key].aliases.some((alias: string) => 
+      const testKey = Object.keys(testDict).find(key => {
+        const testEntry = testDict[key];
+        return testEntry?.aliases?.some((alias: string) => 
           alias.toLowerCase() === newTestName.toLowerCase()
-        )
-      );
+        );
+      });
       
       let normalMin = 0;
       let normalMax = 100;
