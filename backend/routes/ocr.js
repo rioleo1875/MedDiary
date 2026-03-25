@@ -4,9 +4,26 @@ const Tesseract = require("tesseract.js");
 const fs = require("fs");
 
 const parseLabReport = require("../services/parseLabReport");
-const extractPDFText = require("../services/pdfParser");
-const convertPDFToImages = require("../services/pdfToImage");
 const testDictionary = require("../services/testDictionary");
+
+// Try to load PDF services, but provide fallback
+let extractPDFText, convertPDFToImages;
+
+try {
+  extractPDFText = require("../services/pdfParser");
+  console.log("✅ pdfParser loaded successfully");
+} catch (err) {
+  console.log("⚠️ pdfParser not available, using fallback");
+  extractPDFText = async () => ""; // Fallback to OCR
+}
+
+try {
+  convertPDFToImages = require("../services/pdfToImage");
+  console.log("✅ pdfToImage loaded successfully");
+} catch (err) {
+  console.log("⚠️ pdfToImage not available, using fallback");
+  convertPDFToImages = async () => []; // Fallback
+}
 
 const router = express.Router();
 
