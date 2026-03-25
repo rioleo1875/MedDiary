@@ -80,14 +80,30 @@ export default function TestScreen() {
 
       setUploading(true);
       console.log('Tests: Uploading to OCR endpoint...');
+      
+      // Add timeout and retry logic
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+      
       const res = await fetch(
         `${API_BASE}/api/ocr/scan/${activeMember.member_id}`,
         {
           method: "POST",
           headers: { "Content-Type": "multipart/form-data", "x-user-id": String(userId) },
           body: formData,
+          signal: controller.signal
         }
       );
+      
+      clearTimeout(timeoutId);
+      
+      console.log('Tests: OCR response status:', res.status);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.log('Tests: Error response:', errorText);
+        throw new Error(errorText);
+      }
       
       const data = await res.json();
       console.log('Tests: OCR response:', data);
@@ -98,16 +114,29 @@ export default function TestScreen() {
       } else {
         // More specific error messages
         if (data.error?.includes("extract text")) {
-          Alert.alert("OCR Error", "Could not extract text from the PDF. Please ensure it's a clear, text-based PDF or try a different file.");
+          Alert.alert("OCR Error", "This PDF appears to be scanned images. Please try a text-based PDF or clear image file.");
         } else if (data.error?.includes("network") || data.error?.includes("connection")) {
           Alert.alert("Connection Error", "Network issue. Please check your connection and try again.");
+        } else if (data.error?.includes("file")) {
+          Alert.alert("File Error", "Please check the file format and try again.");
         } else {
           Alert.alert("Processing Error", data.error || "Could not process report. Please try again.");
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Tests: Upload error:', err);
-      Alert.alert("Upload failed", "An error occurred while uploading. Please try again.");
+      
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          Alert.alert("Timeout", "Upload timed out. Please try again with a smaller file.");
+        } else if (err.message?.includes("Network request failed")) {
+          Alert.alert("Network Error", "Please check your internet connection and try again.");
+        } else {
+          Alert.alert("Upload failed", "An error occurred while uploading. Please try again.");
+        }
+      } else {
+        Alert.alert("Upload failed", "An unknown error occurred while uploading. Please try again.");
+      }
     } finally {
       setUploading(false);
     }
