@@ -5,19 +5,7 @@ FROM node:18-alpine
 RUN apk add --no-cache \
     tesseract \
     tesseract-data-eng \
-    poppler-utils \
-    python3 \
-    make \
-    g++ \
-    cairo-dev \
-    jpeg-dev \
-    pango-dev \
-    musl-dev \
-    giflib-dev \
-    pixman-dev \
-    pangomm-dev \
-    libjpeg-turbo-dev \
-    freetype-dev
+    poppler-utils
 
 # Set working directory
 WORKDIR /app
