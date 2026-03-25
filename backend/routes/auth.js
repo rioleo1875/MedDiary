@@ -3,28 +3,24 @@ const router = express.Router();
 const db = require("../config/db");
 const nodemailer = require("nodemailer");
 
-const otpStore = {}; // temporary in-memory store
+const otpStore = {};
 
 // Create transporter only if credentials exist
 let transporter = null;
-try {
-  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-    transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-    console.log("✅ Email transporter configured");
-  } else {
-    console.warn("⚠️ Email credentials missing. OTP will be logged instead of sent.");
-  }
-} catch (err) {
-  console.error("❌ Failed to create email transporter:", err.message);
+if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+  transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+  console.log("✅ Email configured");
+} else {
+  console.log("⚠️ Email not configured - OTP will be logged");
 }
 
-// Helper function to send OTP (logs if email not configured)
+// Send OTP function
 async function sendOTP(email, otp) {
   if (transporter) {
     await transporter.sendMail({
@@ -34,7 +30,7 @@ async function sendOTP(email, otp) {
       text: `Your OTP is ${otp}. Valid for 5 minutes.`,
     });
   } else {
-    console.log(`📧 OTP for ${email}: ${otp} (email not configured)`);
+    console.log(`📧 OTP for ${email}: ${otp}`);
   }
 }
 
@@ -62,7 +58,7 @@ router.post("/send-otp", async (req, res) => {
   }
 });
 
-// Verify OTP (same as before)
+// Verify OTP
 router.post("/verify-otp", async (req, res) => {
   const { email, otp } = req.body;
 
