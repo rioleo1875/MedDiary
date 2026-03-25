@@ -1,11 +1,13 @@
-# Use Node.js 18 LTS as base image
-FROM node:18-alpine
+# Use Node.js 18 LTS with Ubuntu base
+FROM node:18-bullseye
 
 # Install system dependencies needed for Tesseract OCR
-RUN apk add --no-cache \
-    tesseract \
-    tesseract-data-eng \
-    poppler-utils
+RUN apt-get update && \
+    apt-get install -y \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    poppler-utils \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
