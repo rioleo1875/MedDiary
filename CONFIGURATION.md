@@ -49,8 +49,8 @@ DB_USER=root
 DB_PASSWORD=MCzaNZOMEOcwvPcjVncvGmPGaHKwzVbO
 DB_NAME=railway
 DB_PORT=3306
-EMAIL_PASS=lmlhprzgqbzlpojl
-EMAIL_USER=meddiary007@gmail.com
+SENDGRID_API_KEY=your_sendgrid_api_key_here
+EMAIL_USER=your_verified_sender_email@domain.com
 PORT=3000
 ```
 
