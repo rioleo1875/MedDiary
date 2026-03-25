@@ -71,13 +71,19 @@ export default function TestScreen() {
       console.log('1. Opening document picker...');
       const result = await DocumentPicker.getDocumentAsync({
         type: ["application/pdf", "image/*"],
-        copyToCacheDirectory: true,
+        copyToCacheDirectory: true
       });
       
       console.log('2. Document picker result:', result);
       
       if (result.canceled) {
         console.log('User cancelled document picker');
+        return;
+      }
+
+      if (!result.assets || result.assets.length === 0) {
+        console.log('No files selected');
+        Alert.alert("Error", "No file was selected. Please try again.");
         return;
       }
 
@@ -88,6 +94,19 @@ export default function TestScreen() {
         size: file.size,
         uri: file.uri
       });
+      
+      // Validate file
+      if (!file.uri) {
+        console.log('File URI is missing');
+        Alert.alert("Error", "File URI is missing. Please try again.");
+        return;
+      }
+      
+      if (file.size && file.size > 10 * 1024 * 1024) { // 10MB limit
+        console.log('File too large:', file.size);
+        Alert.alert("Error", "File is too large. Please select a file smaller than 10MB.");
+        return;
+      }
       
       console.log('4. Creating FormData...');
       const formData = new FormData();
