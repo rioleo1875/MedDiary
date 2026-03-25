@@ -54,7 +54,7 @@ router.get("/:memberId", async (req, res) => {
       SELECT 
         eh.id,
         'Edit' as type,
-        CONCAT('Edited ', test_name, ' from ', old_value, ' to ', new_value) as text,
+        CONCAT('Edited ', eh.test_name, ' from ', eh.old_value) as text,
         'Updated' as status,
         DATE_FORMAT(eh.changed_at, '%Y-%m-%d') as date,
         eh.changed_at as sort_date

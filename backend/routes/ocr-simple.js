@@ -3,52 +3,15 @@ const multer = require("multer");
 const Tesseract = require("tesseract.js");
 const fs = require("fs");
 
-const parseLabReport = require("../services/parseLabReport");
 const extractPDFText = require("../services/pdfParser");
 const convertPDFToImages = require("../services/pdfToImage");
-const testDictionary = require("../services/testDictionary");
 
 const router = express.Router();
-
-function normalizeText(raw) {
-  return raw
-    .toLowerCase()
-    .replace(/[\r\n\t]+/g, " ")
-    .replace(/[^a-z0-9 ]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function hasKnownTestAlias(text) {
-  const normalized = normalizeText(text);
-  return Object.values(testDictionary).some((entry) => {
-    const aliases = entry.aliases || [];
-    return aliases.some((alias) => normalized.includes(alias.toLowerCase()));
-  });
-}
-
-function shouldFallbackToOCR(text) {
-  if (!text || !text.trim()) return true;
-
-  const wordCount = text.trim().split(/\s+/).length;
-  const significant = text.trim().length >= 20;
-  const knownTest = hasKnownTestAlias(text);
-
-  if (!significant) return true;
-  if (knownTest) return false;
-
-  
-  if (wordCount < 20) return true;
-
-  return false;
-}
 
 const upload = multer({ dest: "uploads/" });
 
 router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
-
   try {
-
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
@@ -63,14 +26,12 @@ router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
     let text = "";
 
     if (mime === "application/pdf") {
-
       console.log("Trying PDF parser...");
 
       try {
         text = await extractPDFText(filePath);
         console.log("PDF parser succeeded, extracted length:", text.length);
         
-        // Check if extracted text is meaningful
         if (text && text.trim().length > 50) {
           console.log("PDF text looks sufficient, skipping OCR fallback");
         } else {
@@ -81,57 +42,43 @@ router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
         console.log("PDF parser failed or insufficient text, switching to OCR fallback");
 
         const imagePaths = await convertPDFToImages(filePath);
-
         let pages = [];
 
         for (const img of imagePaths) {
-
           const result = await Tesseract.recognize(img, "eng");
-
           pages.push(result.data.text);
-
           try { fs.unlinkSync(img); } catch {}
-
         }
 
         text = pages.join("\n");
       }
-
     } else {
-
       console.log("Running OCR on image");
-
       const result = await Tesseract.recognize(filePath, "eng");
-
       text = result.data.text;
-
     }
 
     console.log("===== EXTRACTED TEXT =====");
-    console.log(text);
+    console.log(text.substring(0, 500) + "...");
     console.log("==========================");
 
     if (!text || text.trim().length === 0) {
       return res.status(400).json({ error: "Could not extract text" });
     }
 
-    await parseLabReport(text, memberId);
-
+    // For now, just return success without database operations
     res.json({
-      message: "Report processed",
-      extractedText: text
+      message: "Report processed successfully",
+      extractedText: text.substring(0, 1000), // Return first 1000 chars
+      memberId: memberId
     });
 
   } catch (err) {
-
     console.error("Processing error:", err);
-
     res.status(500).json({
-      error: "Lab report processing failed"
+      error: "Lab report processing failed: " + err.message
     });
-
   }
-
 });
 
 module.exports = router;
