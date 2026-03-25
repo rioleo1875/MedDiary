@@ -344,7 +344,7 @@ export default function TestScreen() {
       await fetchTests();
     } catch (err) {
       console.error("Add test error:", err);
-      Alert.alert("Error", "Failed to add test result");
+      Alert.alert("Error", `Failed to add test result: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setAddingTest(false);
     }
