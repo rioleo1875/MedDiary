@@ -74,11 +74,10 @@ export default function AddMemberScreen() {
       updatedMembers = [...familyMembers, newMember];
     }
 
-    // 🔥 Sync global
+   
     familyMembers.length = 0;
     familyMembers.push(...updatedMembers);
 
-    // ✅ FIXED: use centralized save
     await saveFamily();
 
     router.back();

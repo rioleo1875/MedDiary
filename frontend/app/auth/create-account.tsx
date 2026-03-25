@@ -73,10 +73,10 @@ export default function CreateAccountScreen() {
         />
 
         <TextInput
-          placeholder="Email" // ✅ changed
+          placeholder="Email" 
           placeholderTextColor="#9ca3af"
-          keyboardType="email-address" // ✅ better UX
-          autoCapitalize="none" // ✅ important for email
+          keyboardType="email-address" 
+          autoCapitalize="none" 
           value={email}
           onChangeText={setEmail}
           style={styles.input}
