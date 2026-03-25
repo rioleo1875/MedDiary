@@ -68,27 +68,40 @@ router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
 
       try {
         text = await extractPDFText(filePath);
+        console.log("PDF parser extracted text length:", text?.length || 0);
+        
+        // Only use OCR fallback if PDF extraction fails or returns minimal text
+        if (!text || text.trim().length < 50) {
+          console.log("PDF text insufficient, switching to OCR fallback");
+          
+          const imagePaths = await convertPDFToImages(filePath);
+          let pages = [];
+
+          for (const img of imagePaths) {
+            const result = await Tesseract.recognize(img, "eng");
+            pages.push(result.data.text);
+            try { fs.unlinkSync(img); } catch {}
+          }
+
+          text = pages.join("\n");
+          console.log("OCR extracted text length:", text?.length || 0);
+        } else {
+          console.log("PDF text extraction successful, skipping OCR");
+        }
       } catch (e) {
-        console.log("PDF parser failed");
+        console.log("PDF parser failed, using OCR fallback:", e.message);
+        
+        const imagePaths = await convertPDFToImages(filePath);
+        let pages = [];
+
+        for (const img of imagePaths) {
+          const result = await Tesseract.recognize(img, "eng");
+          pages.push(result.data.text);
+          try { fs.unlinkSync(img); } catch {}
+        }
+
+        text = pages.join("\n");
       }
-
-      console.log("Switching to OCR fallback");
-
-      const imagePaths = await convertPDFToImages(filePath);
-
-      let pages = [];
-
-      for (const img of imagePaths) {
-
-        const result = await Tesseract.recognize(img, "eng");
-
-        pages.push(result.data.text);
-
-        try { fs.unlinkSync(img); } catch {}
-
-      }
-
-      text = pages.join("\n");
 
     } else {
 
@@ -101,11 +114,14 @@ router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
     }
 
     console.log("===== EXTRACTED TEXT =====");
-    console.log(text);
+    console.log("Text length:", text?.length || 0);
+    console.log("Text preview:", text?.substring(0, 200) + (text?.length > 200 ? "..." : ""));
     console.log("==========================");
 
     if (!text || text.trim().length === 0) {
-      return res.status(400).json({ error: "Could not extract text" });
+      return res.status(400).json({ 
+        error: "Could not extract text from PDF. Please ensure the PDF contains readable text (not scanned images) and try again." 
+      });
     }
 
     await parseLabReport(text, memberId);
