@@ -68,34 +68,27 @@ router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
 
       try {
         text = await extractPDFText(filePath);
-        console.log("PDF parser succeeded, extracted length:", text.length);
-        
-        // Check if extracted text is meaningful
-        if (text && text.trim().length > 50) {
-          console.log("PDF text looks sufficient, skipping OCR fallback");
-        } else {
-          console.log("PDF text too short, trying OCR fallback");
-          throw new Error("Insufficient text extracted");
-        }
       } catch (e) {
-        console.log("PDF parser failed or insufficient text, switching to OCR fallback");
-
-        const imagePaths = await convertPDFToImages(filePath);
-
-        let pages = [];
-
-        for (const img of imagePaths) {
-
-          const result = await Tesseract.recognize(img, "eng");
-
-          pages.push(result.data.text);
-
-          try { fs.unlinkSync(img); } catch {}
-
-        }
-
-        text = pages.join("\n");
+        console.log("PDF parser failed");
       }
+
+      console.log("Switching to OCR fallback");
+
+      const imagePaths = await convertPDFToImages(filePath);
+
+      let pages = [];
+
+      for (const img of imagePaths) {
+
+        const result = await Tesseract.recognize(img, "eng");
+
+        pages.push(result.data.text);
+
+        try { fs.unlinkSync(img); } catch {}
+
+      }
+
+      text = pages.join("\n");
 
     } else {
 
