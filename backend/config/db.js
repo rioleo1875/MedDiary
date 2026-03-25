@@ -1,6 +1,6 @@
 const mysql = require("mysql2/promise");
 
-// Check if required environment variables are set
+
 const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 

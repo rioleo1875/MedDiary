@@ -19,7 +19,7 @@ export default function FamilyScreen() {
 
   const [members, setMembers] = useState(familyMembers);
 
-  // 🔥 LOAD DATA
+  
   const loadMembers = async () => {
     const stored = await AsyncStorage.getItem("familyMembers");
     if (stored) {
@@ -32,14 +32,14 @@ export default function FamilyScreen() {
     }
   };
 
-  // 🔥 REFRESH
+  
   useFocusEffect(
     useCallback(() => {
       loadMembers();
     }, [])
   );
 
-  // 🔹 DELETE
+  
   const deleteMember = async (id: string) => {
     const updated = members.filter((m) => m.id !== id);
     setMembers(updated);
