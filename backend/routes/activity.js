@@ -8,24 +8,31 @@ router.get("/:memberId", async (req, res) => {
     const memberId = req.params.memberId;
     const limit = parseInt(req.query.limit) || 10;
     
-    // Get recent test results
-    const [tests] = await db.query(`
-      SELECT 
-        test_id as id,
-        'Test Result' as type,
-        test_name as text,
-        CASE 
-          WHEN status = 'abnormal' THEN 'Abnormal'
-          WHEN status = 'moderate' THEN 'Moderate' 
-          ELSE 'Normal'
-        END as status,
-        DATE_FORMAT(test_date, '%Y-%m-%d') as date,
-        test_date as sort_date
-      FROM test_results 
-      WHERE member_id = ?
-      ORDER BY test_date DESC 
-      LIMIT ?
-    `, [memberId, limit]);
+    let tests = [];
+    try {
+      // Get recent test results
+      const [testResults] = await db.query(`
+        SELECT 
+          test_id as id,
+          'Test Result' as type,
+          test_name as text,
+          CASE 
+            WHEN status = 'abnormal' THEN 'Abnormal'
+            WHEN status = 'moderate' THEN 'Moderate' 
+            ELSE 'Normal'
+          END as status,
+          DATE_FORMAT(test_date, '%Y-%m-%d') as date,
+          test_date as sort_date
+        FROM test_results 
+        WHERE member_id = ?
+        ORDER BY test_date DESC 
+        LIMIT ?
+      `, [memberId, limit]);
+      tests = testResults;
+    } catch (testError) {
+      console.log("Test results table not found or query failed:", testError.message);
+      // Test results table might not exist, that's okay
+    }
 
     // Get recent medication updates (if medications table exists)
     let medications = [];
@@ -50,21 +57,27 @@ router.get("/:memberId", async (req, res) => {
     }
 
     // Get recent edits to test results
-    const [edits] = await db.query(`
-      SELECT 
-        eh.id,
-        'Edit' as type,
-        CONCAT('Edited ', test_name, ' from ', old_value, ' to ', new_value) as text,
-        'Updated' as status,
-        DATE_FORMAT(eh.changed_at, '%Y-%m-%d') as date,
-        eh.changed_at as sort_date
-      FROM edit_history eh
-      WHERE eh.test_id IN (
-        SELECT test_id FROM test_results WHERE member_id = ?
-      )
-      ORDER BY eh.changed_at DESC 
-      LIMIT ?
-    `, [memberId, limit]);
+    let edits = [];
+    try {
+      const [editResults] = await db.query(`
+        SELECT 
+          eh.id,
+          'Edit' as type,
+          CONCAT('Edited ', tr.test_name, ' from ', eh.old_value, ' to ', eh.new_value) as text,
+          'Updated' as status,
+          DATE_FORMAT(eh.changed_at, '%Y-%m-%d') as date,
+          eh.changed_at as sort_date
+        FROM edit_history eh
+        JOIN test_results tr ON eh.test_id = tr.test_id
+        WHERE tr.member_id = ?
+        ORDER BY eh.changed_at DESC 
+        LIMIT ?
+      `, [memberId, limit]);
+      edits = editResults;
+    } catch (editError) {
+      console.log("Edit history table not found or query failed:", editError.message);
+      // Edit history might not exist, that's okay
+    }
 
     // Combine all activities
     const allActivities = [...tests, ...medications, ...edits];

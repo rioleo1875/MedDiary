@@ -37,11 +37,20 @@ router.post("/check/:userId", async (req, res) => {
   const { userId } = req.params;
 
   try {
+    let rows = [];
     
-    const [rows] = await db.query(
-      "SELECT med_name FROM medications WHERE member_id = ?",
-      [userId]
-    );
+    try {
+      [rows] = await db.query(
+        "SELECT med_name FROM medications WHERE member_id = ?",
+        [userId]
+      );
+    } catch (dbError) {
+      console.log("Medications table not found or query failed:", dbError.message);
+      return res.json({
+        warningMessage: "No medications found to check interactions.",
+        interactions: []
+      });
+    }
 
     if (rows.length < 2) {
       return res.json({
@@ -49,9 +58,10 @@ router.post("/check/:userId", async (req, res) => {
         interactions: []
       });
     }
+    
     const meds = [...new Set(
-    rows.map(r => r.med_name.toLowerCase())
-      )];
+      rows.map(r => r.med_name.toLowerCase())
+    )];
   
     let interactions = [];
 
@@ -60,17 +70,22 @@ router.post("/check/:userId", async (req, res) => {
         const drugA = meds[i];
         const drugB = meds[j];
 
-        const drugAData = await getDrugInfo(drugA);
-        if (!drugAData) continue;
+        try {
+          const drugAData = await getDrugInfo(drugA);
+          if (!drugAData) continue;
 
-        const result = checkInteraction(drugAData, drugB);
+          const result = checkInteraction(drugAData, drugB);
 
-        if (result.severity === "High") {
-          interactions.push({
-            drug1: drugA,
-            drug2: drugB,
-            severity: "High"
-          });
+          if (result.severity === "High") {
+            interactions.push({
+              drug1: drugA,
+              drug2: drugB,
+              severity: "High"
+            });
+          }
+        } catch (apiError) {
+          console.log("FDA API error for drug:", drugA, apiError.message);
+          // Continue with other drugs even if API fails
         }
       }
     }
