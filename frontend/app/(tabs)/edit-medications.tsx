@@ -31,6 +31,8 @@ export default function EditMedications() {
   const [frequency, setFrequency] = useState("");
   const [type, setType] = useState<"regular" | "temporary">("regular");
   const [endDate, setEndDate] = useState(""); // only for temporary
+  const [ddiWarning, setDdiWarning] = useState<string | null>(null);
+  const [checkingDDI, setCheckingDDI] = useState(false);
 
   // ── Fetch from backend ──────────────────────────────────────
   const fetchMeds = useCallback(async () => {
@@ -52,10 +54,62 @@ export default function EditMedications() {
 
   useFocusEffect(useCallback(() => { fetchMeds(); }, [fetchMeds]));
 
+  // ── Check DDI before adding medication ───────────────────────
+  const checkDDI = async (newMedName: string) => {
+    if (!activeMember || !newMedName.trim()) return;
+    
+    setCheckingDDI(true);
+    try {
+      // Get current medications + new one to check
+      const currentMeds = medList.map(m => m.med_name.toLowerCase());
+      const allMeds = [...currentMeds, newMedName.toLowerCase()];
+      
+      if (allMeds.length < 2) {
+        setDdiWarning(null);
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/ddi/check/${userId}`, {
+        method: 'POST',
+        headers: { 'x-user-id': String(userId) },
+      });
+      const data = await res.json();
+      
+      if (data.highRiskCount > 0) {
+        setDdiWarning(data.warningMessage);
+      } else {
+        setDdiWarning(null);
+      }
+    } catch (err) {
+      console.error("DDI check error:", err);
+    } finally {
+      setCheckingDDI(false);
+    }
+  };
+
   // ── Add medication ──────────────────────────────────────────
   const addMedication = async () => {
     if (!name.trim()) { Alert.alert("Enter medication name"); return; }
     if (!activeMember) return;
+    
+    // Show confirmation if there's a DDI warning
+    if (ddiWarning) {
+      Alert.alert(
+        "Drug Interaction Warning",
+        `${ddiWarning}\n\nDo you want to continue adding this medication?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Add Anyway", onPress: () => proceedWithAdd() }
+        ]
+      );
+    } else {
+      proceedWithAdd();
+    }
+  };
+  
+  const proceedWithAdd = async () => {
+    if (!activeMember) return;
+    
     setSaving(true);
     try {
       const res = await fetch(`${API_BASE}/api/medications`, {
@@ -76,6 +130,7 @@ export default function EditMedications() {
       const data = await res.json();
       if (!res.ok) { Alert.alert("Error", data.error); return; }
       setName(""); setDosage(""); setFrequency(""); setEndDate("");
+      setDdiWarning(null);
       await fetchMeds();
     } catch {
       Alert.alert("Error", "Failed to add medication");
@@ -122,8 +177,21 @@ export default function EditMedications() {
             placeholderTextColor="#9ca3af"
             style={styles.input}
             value={name}
-            onChangeText={setName}
+            onChangeText={(text) => {
+              setName(text);
+              if (text.trim()) {
+                checkDDI(text.trim());
+              } else {
+                setDdiWarning(null);
+              }
+            }}
           />
+          {ddiWarning && (
+            <View style={styles.warningBox}>
+              <Ionicons name="warning" size={18} color="#b91c1c" />
+              <Text style={styles.warningText}>{ddiWarning}</Text>
+            </View>
+          )}
           <TextInput
             placeholder="Dosage (e.g. 500mg)"
             placeholderTextColor="#9ca3af"
@@ -246,4 +314,14 @@ const styles = StyleSheet.create({
   tempTag: { backgroundColor: "#fef3c7" },
   tagText: { fontSize: 11, fontWeight: "600", color: "#1f2937" },
   empty: { textAlign: "center", color: "#6b7280", marginTop: 30 },
+  warningBox: {
+    flexDirection: "row",
+    backgroundColor: "#fde2e2",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  warningText: { color: "#b91c1c", fontWeight: "500", flex: 1, fontSize: 13 },
 });
