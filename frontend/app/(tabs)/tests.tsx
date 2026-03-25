@@ -38,6 +38,13 @@ export default function TestScreen() {
   const [editUnit, setEditUnit] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Add test modal
+  const [showAddTest, setShowAddTest] = useState(false);
+  const [newTestName, setNewTestName] = useState("");
+  const [newTestValue, setNewTestValue] = useState("");
+  const [newTestUnit, setNewTestUnit] = useState("");
+  const [addingTest, setAddingTest] = useState(false);
+
   // ── Fetch existing results ──────────────────────────────────
   const fetchTests = useCallback(async () => {
     if (!activeMember) return;
@@ -227,6 +234,78 @@ export default function TestScreen() {
     }
   };
 
+  // ── Add Test ───────────────────────────────────────────────
+  const handleAddTest = async () => {
+    if (!activeMember || !newTestName || !newTestValue) {
+      Alert.alert("Missing Info", "Please fill in test name and value.");
+      return;
+    }
+
+    setAddingTest(true);
+    try {
+      // Get test dictionary to determine normal ranges
+      const dictRes = await fetch(`${API_BASE}/api/tests/dictionary`);
+      const testDict = await dictRes.json();
+      
+      // Find matching test in dictionary
+      const testKey = Object.keys(testDict).find(key => 
+        testDict[key].aliases.some((alias: string) => 
+          alias.toLowerCase() === newTestName.toLowerCase()
+        )
+      );
+      
+      let normalMin = 0;
+      let normalMax = 100;
+      let status = "normal";
+      
+      if (testKey && testDict[testKey]) {
+        normalMin = testDict[testKey].normal_min;
+        normalMax = testDict[testKey].normal_max;
+        
+        // Determine status based on value
+        const value = parseFloat(newTestValue);
+        if (value < testDict[testKey].normal_min || value > testDict[testKey].normal_max) {
+          status = "abnormal";
+        } else if (value < testDict[testKey].normal_min * 0.9 || value > testDict[testKey].normal_max * 1.1) {
+          status = "moderate";
+        }
+      }
+      
+      const res = await fetch(`${API_BASE}/api/tests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user-id": String(userId) },
+        body: JSON.stringify({
+          member_id: activeMember.member_id,
+          test_name: newTestName,
+          value: parseFloat(newTestValue),
+          unit: newTestUnit || null,
+          normal_min: normalMin,
+          normal_max: normalMax,
+          status: status,
+          test_date: new Date().toISOString().split('T')[0]
+        }),
+      });
+      
+      if (!res.ok) {
+        const error = await res.json();
+        Alert.alert("Error", error.error || "Failed to add test result");
+        return;
+      }
+      
+      Alert.alert("Success", "Test result added!");
+      setShowAddTest(false);
+      setNewTestName("");
+      setNewTestValue("");
+      setNewTestUnit("");
+      await fetchTests();
+    } catch (err) {
+      console.error("Add test error:", err);
+      Alert.alert("Error", "Failed to add test result");
+    } finally {
+      setAddingTest(false);
+    }
+  };
+
   // ── Delete ──────────────────────────────────────────────────
   const deleteTest = (testId: number) => {
     Alert.alert("Delete", "Remove this test result?", [
@@ -274,6 +353,14 @@ export default function TestScreen() {
             <Text style={styles.uploadText}>
               {uploading ? "Processing..." : "Upload Report (PDF / Image)"}
             </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.addTestBtn, addingTest && { opacity: 0.6 }]}
+            onPress={() => setShowAddTest(true)} disabled={addingTest}
+          >
+            <Ionicons name="add-circle-outline" size={20} color="#fff" />
+            <Text style={styles.addTestText}>Add Test Result</Text>
           </TouchableOpacity>
 
           {loading ? (
@@ -353,10 +440,43 @@ export default function TestScreen() {
           </View>
         </Modal>
 
+        {/* ADD TEST MODAL */}
+        <Modal visible={showAddTest} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>Add Test Result</Text>
+              <TextInput
+                style={styles.modalInput} value={newTestName}
+                onChangeText={setNewTestName} placeholder="Test Name (e.g. Blood Glucose)"
+              />
+              <TextInput
+                style={styles.modalInput} value={newTestValue}
+                onChangeText={setNewTestValue} keyboardType="numeric" placeholder="Value"
+              />
+              <TextInput
+                style={styles.modalInput} value={newTestUnit}
+                onChangeText={setNewTestUnit} placeholder="Unit (e.g. mg/dL)"
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAddTest(false)}>
+                  <Text style={{ color: "#6b7280", fontWeight: "600" }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.saveBtn, addingTest && { opacity: 0.6 }]}
+                  onPress={handleAddTest} disabled={addingTest}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>
+                    {addingTest ? "Adding..." : "Add"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
         <ChatBubble />
       </View>
     </SafeAreaView>
-  );
 }
 
 const styles = StyleSheet.create({
@@ -369,6 +489,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#29A9F8", padding: 14, borderRadius: 12, marginBottom: 20,
   },
   uploadText: { color: "#fff", marginLeft: 8, fontWeight: "600" },
+  addTestBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    backgroundColor: "#16a34a", padding: 14, borderRadius: 12, marginBottom: 20,
+  },
+  addTestText: { color: "#fff", marginLeft: 8, fontWeight: "600" },
   dateHeader: { fontSize: 13, fontWeight: "700", color: "#6b7280", marginBottom: 8, marginTop: 4 },
   card: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 12, elevation: 3 },
   cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },

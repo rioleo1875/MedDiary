@@ -23,6 +23,7 @@ export default function Medications() {
   const [tempMeds, setTempMeds] = useState<any[]>([]);
   const [interaction, setInteraction] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [checkingInteraction, setCheckingInteraction] = useState(false);
 
   const fetchMedications = async () => {
     if (!activeMember) return;
@@ -47,15 +48,24 @@ export default function Medications() {
   };
 
   const checkInteractions = async () => {
+    if (!activeMember) {
+      Alert.alert("No Member", "Please select a family member first.");
+      return;
+    }
+    
     try {
-      const res = await fetch(`${API_BASE}/api/ddi/check/${userId}`, {
+      setCheckingInteraction(true);
+      const res = await fetch(`${API_BASE}/api/ddi/check/${activeMember.member_id}`, {
         method: "POST",
         headers: { "x-user-id": String(userId) },
       });
       const data = await res.json();
-      setInteraction(data.warningMessage ?? null);
+      setInteraction(data.warningMessage || "No interactions detected");
     } catch (err) {
       console.error("DDI check error:", err);
+      Alert.alert("Error", "Failed to check drug interactions");
+    } finally {
+      setCheckingInteraction(false);
     }
   };
 
@@ -123,6 +133,16 @@ export default function Medications() {
                 onPress={() => router.push("/(tabs)/edit-medications" as any)}
               >
                 <Text style={styles.buttonText}>Edit Medications</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.button, checkingInteraction && { opacity: 0.6 }]}
+                onPress={checkInteractions} disabled={checkingInteraction}
+              >
+                <Ionicons name="medical" size={16} color="#fff" style={{ marginRight: 6 }} />
+                <Text style={styles.buttonText}>
+                  {checkingInteraction ? "Checking..." : "Check Interactions"}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
