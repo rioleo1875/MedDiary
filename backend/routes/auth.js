@@ -5,13 +5,38 @@ const nodemailer = require("nodemailer");
 
 const otpStore = {}; // temporary in-memory store
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+// Create transporter only if credentials exist
+let transporter = null;
+try {
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+    console.log("✅ Email transporter configured");
+  } else {
+    console.warn("⚠️ Email credentials missing. OTP will be logged instead of sent.");
+  }
+} catch (err) {
+  console.error("❌ Failed to create email transporter:", err.message);
+}
+
+// Helper function to send OTP (logs if email not configured)
+async function sendOTP(email, otp) {
+  if (transporter) {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "MedDiary OTP",
+      text: `Your OTP is ${otp}. Valid for 5 minutes.`,
+    });
+  } else {
+    console.log(`📧 OTP for ${email}: ${otp} (email not configured)`);
+  }
+}
 
 // Send OTP
 router.post("/send-otp", async (req, res) => {
@@ -28,12 +53,7 @@ router.post("/send-otp", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore[email] = { otp, expiresAt: Date.now() + 5 * 60 * 1000 };
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "MedDiary OTP",
-      text: `Your OTP is ${otp}. Valid for 5 minutes.`,
-    });
+    await sendOTP(email, otp);
 
     res.json({ success: true, message: "OTP sent" });
   } catch (err) {
@@ -42,7 +62,7 @@ router.post("/send-otp", async (req, res) => {
   }
 });
 
-// Verify OTP
+// Verify OTP (same as before)
 router.post("/verify-otp", async (req, res) => {
   const { email, otp } = req.body;
 
@@ -58,6 +78,7 @@ router.post("/verify-otp", async (req, res) => {
   res.json({ success: true, message: "OTP verified" });
 });
 
+// Register
 router.post("/register", async (req, res) => {
   const { name, email } = req.body;
 
@@ -77,12 +98,7 @@ router.post("/register", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore[email] = { otp, expiresAt: Date.now() + 5 * 60 * 1000 };
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "MedDiary OTP",
-      text: `Your OTP is ${otp}. Valid for 5 minutes.`,
-    });
+    await sendOTP(email, otp);
 
     res.json({ success: true, message: "Account created, OTP sent" });
   } catch (err) {
@@ -90,4 +106,5 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 module.exports = router;
