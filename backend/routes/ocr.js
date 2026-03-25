@@ -1,16 +1,7 @@
 const express = require("express");
 const multer = require("multer");
+const Tesseract = require("tesseract.js");
 const fs = require("fs");
-
-// Try to load Tesseract, but handle gracefully if it fails
-let Tesseract;
-try {
-  Tesseract = require("tesseract.js");
-  console.log("✅ Tesseract OCR loaded successfully");
-} catch (err) {
-  console.warn("⚠️ Tesseract OCR not available:", err.message);
-  console.warn("OCR functionality will be limited");
-}
 
 const parseLabReport = require("../services/parseLabReport");
 const extractPDFText = require("../services/pdfParser");
@@ -81,43 +72,25 @@ router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
         console.log("PDF parser failed");
       }
 
-      if (shouldFallbackToOCR(text)) {
+      console.log("Switching to OCR fallback");
 
-        if (!Tesseract) {
-          console.log("OCR not available on this platform");
-          return res.status(503).json({ 
-            error: "OCR not available on this platform. Please upload a PDF with extractable text." 
-          });
-        }
+      const imagePaths = await convertPDFToImages(filePath);
 
-        console.log("Switching to OCR fallback");
+      let pages = [];
 
-        const imagePaths = await convertPDFToImages(filePath);
+      for (const img of imagePaths) {
 
-        let pages = [];
+        const result = await Tesseract.recognize(img, "eng");
 
-        for (const img of imagePaths) {
+        pages.push(result.data.text);
 
-          const result = await Tesseract.recognize(img, "eng");
+        try { fs.unlinkSync(img); } catch {}
 
-          pages.push(result.data.text);
-
-          try { fs.unlinkSync(img); } catch {}
-
-        }
-
-        text = pages.join("\n");
-
-      } else {
-        console.log("Using parsed PDF text, skipping OCR fallback");
       }
+
+      text = pages.join("\n");
 
     } else {
-      if (!Tesseract) {
-        return res.status(503).json({ 
-          error: "OCR not available on this platform. Please upload a PDF with extractable text." 
-        });
-      }
 
       console.log("Running OCR on image");
 
