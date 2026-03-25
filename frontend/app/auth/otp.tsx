@@ -2,7 +2,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-import { API_URL } from "../../constants/api";
+import { API_BASE } from "../../context/MemberContext";
 
 
 export default function OtpScreen() {
@@ -40,7 +40,7 @@ const verifyOtp = async () => {
   setLoading(true);
 
   try {
-    const res = await fetch(`${API_URL}/auth/verify-otp`, {
+    const res = await fetch(`${API_BASE}/auth/verify-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -72,7 +72,7 @@ const handleResendOtp = async () => {
   setCanResend(false);
 
   try {
-    const res = await fetch(`${API_URL}/auth/send-otp`, {
+    const res = await fetch(`${API_BASE}/auth/send-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

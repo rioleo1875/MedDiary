@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-import { API_URL } from "../../constants/api";
+import { API_BASE } from "../../context/MemberContext";
 
 export default function CreateAccountScreen() {
   const router = useRouter();
@@ -20,7 +20,7 @@ export default function CreateAccountScreen() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/auth/register`, {
+      const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

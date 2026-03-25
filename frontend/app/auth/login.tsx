@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-import { API_URL } from "../../constants/api";
+import { API_BASE } from "../../context/MemberContext";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -18,7 +18,7 @@ const handleLogin = async () => {
   setLoading(true);
 
   try {
-    const res = await fetch(`${API_URL}/auth/send-otp`, {
+    const res = await fetch(`${API_BASE}/auth/send-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
