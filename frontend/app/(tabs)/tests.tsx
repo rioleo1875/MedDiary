@@ -62,6 +62,7 @@ export default function TestScreen() {
   const handleUpload = async () => {
     if (!activeMember) { Alert.alert("No Member", "Select a family member first."); return; }
     try {
+      console.log('Tests: Starting file upload for member:', activeMember.member_id);
       const result = await DocumentPicker.getDocumentAsync({
         type: ["application/pdf", "image/*"],
         copyToCacheDirectory: true,
@@ -69,6 +70,8 @@ export default function TestScreen() {
       if (result.canceled) return;
 
       const file = result.assets[0];
+      console.log('Tests: Selected file:', file.name, file.mimeType);
+      
       const formData = new FormData();
       formData.append("report", {
         uri: file.uri, name: file.name,
@@ -76,6 +79,7 @@ export default function TestScreen() {
       } as any);
 
       setUploading(true);
+      console.log('Tests: Uploading to OCR endpoint...');
       const res = await fetch(
         `${API_BASE}/api/ocr/scan/${activeMember.member_id}`,
         {
@@ -84,15 +88,26 @@ export default function TestScreen() {
           body: formData,
         }
       );
+      
       const data = await res.json();
+      console.log('Tests: OCR response:', data);
+      
       if (data.message === "Report processed") {
         Alert.alert("Success", "Report analyzed and saved!");
         await fetchTests();
       } else {
-        Alert.alert("Error", data.error || "Could not process report");
+        // More specific error messages
+        if (data.error?.includes("extract text")) {
+          Alert.alert("OCR Error", "Could not extract text from the PDF. Please ensure it's a clear, text-based PDF or try a different file.");
+        } else if (data.error?.includes("network") || data.error?.includes("connection")) {
+          Alert.alert("Connection Error", "Network issue. Please check your connection and try again.");
+        } else {
+          Alert.alert("Processing Error", data.error || "Could not process report. Please try again.");
+        }
       }
     } catch (err) {
-      Alert.alert("Upload failed");
+      console.error('Tests: Upload error:', err);
+      Alert.alert("Upload failed", "An error occurred while uploading. Please try again.");
     } finally {
       setUploading(false);
     }
