@@ -61,54 +61,79 @@ export default function TestScreen() {
   // ── Upload report ───────────────────────────────────────────
   const handleUpload = async () => {
     if (!activeMember) { Alert.alert("No Member", "Select a family member first."); return; }
+    
+    console.log('=== UPLOAD DEBUG START ===');
+    console.log('Active Member:', activeMember);
+    console.log('User ID:', userId);
+    console.log('API_BASE:', API_BASE);
+    
     try {
-      console.log('Tests: Starting file upload for member:', activeMember.member_id);
+      console.log('1. Opening document picker...');
       const result = await DocumentPicker.getDocumentAsync({
         type: ["application/pdf", "image/*"],
         copyToCacheDirectory: true,
       });
-      if (result.canceled) return;
+      
+      console.log('2. Document picker result:', result);
+      
+      if (result.canceled) {
+        console.log('User cancelled document picker');
+        return;
+      }
 
       const file = result.assets[0];
-      console.log('Tests: Selected file:', file.name, file.mimeType);
+      console.log('3. Selected file details:', {
+        name: file.name,
+        mimeType: file.mimeType,
+        size: file.size,
+        uri: file.uri
+      });
       
+      console.log('4. Creating FormData...');
       const formData = new FormData();
       formData.append("report", {
-        uri: file.uri, name: file.name,
+        uri: file.uri, 
+        name: file.name,
         type: file.mimeType || "application/pdf",
       } as any);
-
+      
+      console.log('5. FormData created, setting uploading state...');
       setUploading(true);
-      console.log('Tests: Uploading to OCR endpoint...');
+      
+      const uploadUrl = `${API_BASE}/api/ocr/scan/${activeMember.member_id}`;
+      console.log('6. Upload URL:', uploadUrl);
       
       // Add timeout and retry logic
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
       
-      const res = await fetch(
-        `${API_BASE}/api/ocr/scan/${activeMember.member_id}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "multipart/form-data", "x-user-id": String(userId) },
-          body: formData,
-          signal: controller.signal
-        }
-      );
+      console.log('7. Starting fetch...');
+      const res = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "multipart/form-data", 
+          "x-user-id": String(userId) 
+        },
+        body: formData,
+        signal: controller.signal
+      });
       
       clearTimeout(timeoutId);
-      
-      console.log('Tests: OCR response status:', res.status);
+      console.log('8. Fetch completed, status:', res.status);
+      console.log('9. Response headers:', res.headers);
       
       if (!res.ok) {
         const errorText = await res.text();
-        console.log('Tests: Error response:', errorText);
+        console.log('10. Error response body:', errorText);
         throw new Error(errorText);
       }
       
+      console.log('11. Parsing JSON response...');
       const data = await res.json();
-      console.log('Tests: OCR response:', data);
+      console.log('12. Final OCR response:', data);
       
       if (data.message === "Report processed") {
+        console.log('13. Success - refreshing tests...');
         Alert.alert("Success", "Report analyzed and saved!");
         await fetchTests();
       } else {
@@ -124,7 +149,11 @@ export default function TestScreen() {
         }
       }
     } catch (err: unknown) {
-      console.error('Tests: Upload error:', err);
+      console.error('=== UPLOAD ERROR ===');
+      console.error('Error type:', typeof err);
+      console.error('Error name:', err instanceof Error ? err.name : 'Not an Error');
+      console.error('Error message:', err instanceof Error ? err.message : err);
+      console.error('Full error:', err);
       
       if (err instanceof Error) {
         if (err.name === 'AbortError') {
@@ -132,12 +161,13 @@ export default function TestScreen() {
         } else if (err.message?.includes("Network request failed")) {
           Alert.alert("Network Error", "Please check your internet connection and try again.");
         } else {
-          Alert.alert("Upload failed", "An error occurred while uploading. Please try again.");
+          Alert.alert("Upload failed", `An error occurred: ${err.message}`);
         }
       } else {
-        Alert.alert("Upload failed", "An unknown error occurred while uploading. Please try again.");
+        Alert.alert("Upload failed", "An unknown error occurred while uploading.");
       }
     } finally {
+      console.log('=== UPLOAD DEBUG END ===');
       setUploading(false);
     }
   };
