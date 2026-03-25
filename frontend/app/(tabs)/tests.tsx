@@ -161,7 +161,10 @@ export default function TestScreen() {
       if (data.message === "Report processed") {
         console.log('13. Success - refreshing tests...');
         Alert.alert("Success", "Report analyzed and saved!");
-        await fetchTests();
+        // Add small delay to ensure backend has processed the data
+        setTimeout(async () => {
+          await fetchTests();
+        }, 1000);
       } else {
         // More specific error messages
         if (data.error?.includes("extract text")) {
@@ -269,7 +272,7 @@ export default function TestScreen() {
         body: JSON.stringify({
           member_id: activeMember.member_id,
           test_name: newTestName,
-          value: parseFloat(newTestValue),
+          value: newTestValue, // Send as string, not number
           unit: newTestUnit || null,
           normal_min: normalMin,
           normal_max: normalMax,
