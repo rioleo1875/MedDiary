@@ -1,5 +1,5 @@
-# Use Node.js 18 LTS with Ubuntu base
-FROM node:18-bullseye
+# Use Node.js 20 LTS with Ubuntu base
+FROM node:20-bullseye
 
 # Install system dependencies needed for Tesseract OCR
 RUN apt-get update && \
