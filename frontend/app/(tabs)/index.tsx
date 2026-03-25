@@ -10,49 +10,31 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Images } from "../../constants/Images";
-import {
-  getSelectedMember,
-  setSelectedMember,
-} from "../../constants/selectedMember";
-import { familyMembers } from "../../constants/familyData";
+import { useMember } from "../../context/MemberContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { activeMember } = useMember();
+  const { logout } = useAuth();
 
-  const selectedId = getSelectedMember();
-  const selected = familyMembers.find((m) => m.id === selectedId);
-
-// Get real activities from selected member's data
-const getRecentActivities = () => {
-  if (!selected) return [];
-  
-  const activitiesList = [];
-  
-  // Show medications if any exist
-  if (selected.medications && selected.medications.length > 0) {
-    const lastMed = selected.medications[selected.medications.length - 1];
-    activitiesList.push({
-      id: "med1",
-      type: "Medication",
-      text: `${lastMed.name} added`,
-      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    });
-  }
-  
-  // Add placeholder if no activities
-  if (activitiesList.length === 0) {
+  const getRecentActivities = () => {
+    if (!activeMember) return [];
+    
+    const activitiesList = [];
+    
+    // Add placeholder for now - we'll fetch real medications from API
     activitiesList.push({
       id: "placeholder",
       type: "Info",
       text: "No recent activity",
       date: "-"
     });
-  }
-  
-  return activitiesList;
-};
+    
+    return activitiesList;
+  };
 
-const activities = getRecentActivities();
+  const activities = getRecentActivities();
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -72,18 +54,18 @@ const activities = getRecentActivities();
               </Text>
 
               <Text style={styles.tagline}>
-                {selected
-                  ? `Viewing ${selected.name}'s Profile`
+                {activeMember
+                  ? `Viewing ${activeMember.name}'s Profile`
                   : "Your family medical records, in one place"}
               </Text>
             </View>
 
             {/* ✅ FIXED ONLY THIS BLOCK */}
-            {selected ? (
+            {activeMember ? (
               <TouchableOpacity
-                onPress={() => {
-                  setSelectedMember(null);
-                  router.replace("/(tabs)");
+                onPress={async () => {
+                  await logout();
+                  router.replace("/auth/login");
                 }}
               >
                 <Ionicons
@@ -94,7 +76,10 @@ const activities = getRecentActivities();
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                onPress={() => router.replace("/auth/login" as any)}
+                onPress={async () => {
+                  await logout();
+                  router.replace("/auth/login");
+                }}
               >
                 <Ionicons
                   name="log-out-outline"
@@ -114,19 +99,19 @@ const activities = getRecentActivities();
 
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>
-                {selected ? selected.name : "Archana A"}
+                {activeMember ? activeMember.name : "Select a Family Member"}
               </Text>
 
               <Text style={styles.info}>
-                Blood Group: {selected ? selected.blood : "A+"}
+                Blood Group: {activeMember ? activeMember.blood_group : "Not set"}
               </Text>
 
               <Text style={styles.info}>
-                Age: {selected ? selected.age : "21"}
+                Age: {activeMember ? activeMember.age : "Not set"}
               </Text>
 
               <Text style={styles.info}>
-                 Emergency Contact: Not set
+                 Emergency Contact: {activeMember?.emergency_contact_name ? `${activeMember.emergency_contact_name} (${activeMember.emergency_contact_phone})` : "Not set"}
               </Text>
             </View>
           </View>

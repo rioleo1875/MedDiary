@@ -3,11 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 import { API_BASE } from "../../context/MemberContext";
-
+import { useAuth } from "../../context/AuthContext";
 
 export default function OtpScreen() {
   const router = useRouter();
   const { email } = useLocalSearchParams(); 
+  const { login } = useAuth();
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(60);
@@ -51,6 +52,7 @@ const verifyOtp = async () => {
     const data = await res.json();
 
     if (data.success) {
+      await login(email as string);
       router.replace("/(tabs)");
     } else {
       alert("Invalid OTP");
