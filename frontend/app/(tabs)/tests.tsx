@@ -55,6 +55,10 @@ export default function TestScreen() {
         { headers: { "x-user-id": String(userId) } }
       );
       const data = await res.json();
+      console.log('=== FETCH TESTS DEBUG ===');
+      console.log('API Response:', data);
+      console.log('groupedByDate:', data.groupedByDate);
+      console.log('Setting grouped to:', data.groupedByDate ?? []);
       setGrouped(data.groupedByDate ?? []);
     } catch {
       Alert.alert("Error", "Failed to load test results");
