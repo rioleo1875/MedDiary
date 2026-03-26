@@ -1,28 +1,37 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
-const sgMail = require("@sendgrid/mail");
+const nodemailer = require("nodemailer");
 
 const otpStore = {};
+let transporter;
 
-// Configure SendGrid if API key exists
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  console.log("✅ Email configured with SendGrid");
+// Configure Gmail SMTP
+if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+  transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // TLS
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+  console.log("✅ Email configured with Gmail SMTP");
 } else {
   console.log("⚠️ Email not configured - OTP will be logged");
 }
 
 // Send OTP function
 async function sendOTP(email, otp) {
-  if (process.env.SENDGRID_API_KEY) {
-    const msg = {
+  if (transporter) {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
       to: email,
-      from: process.env.EMAIL_USER, // Must be verified in SendGrid
       subject: "MedDiary OTP",
       text: `Your OTP is ${otp}. Valid for 5 minutes.`,
     };
-    await sgMail.send(msg);
+    await transporter.sendMail(mailOptions);
   } else {
     console.log(`📧 OTP for ${email}: ${otp}`);
   }
