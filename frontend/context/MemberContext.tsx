@@ -35,7 +35,7 @@ type MemberContextType = {
 const MemberContext = createContext<MemberContextType | null>(null);
 
 
-export const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://meddiary-production-bc12.up.railway.app";
+export const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://meddiary-production.up.railway.app";
 
 
 
