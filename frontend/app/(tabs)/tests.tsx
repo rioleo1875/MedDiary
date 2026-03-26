@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useState, useCallback } from "react";
+import * as DocumentPicker from "expo-document-picker";
 import ChatBubble from "../../components/ChatBubble";
 import { API_BASE, useMember } from "../../context/MemberContext";
 
@@ -29,6 +30,7 @@ export default function TestScreen() {
 
   const [grouped, setGrouped] = useState<GroupedDate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   // Edit modal
   const [editingTest, setEditingTest] = useState<TestResult | null>(null);
@@ -62,6 +64,222 @@ export default function TestScreen() {
   }, [activeMember?.member_id]);
 
   useFocusEffect(useCallback(() => { fetchTests(); }, [fetchTests]));
+
+  // ── Upload report ───────────────────────────────────────────
+  const handleUpload = async () => {
+    if (!activeMember) { Alert.alert("No Member", "Select a family member first."); return; }
+    
+    console.log('=== UPLOAD DEBUG START ===');
+    console.log('Active Member:', activeMember);
+    console.log('User ID:', userId);
+    console.log('API_BASE:', API_BASE);
+    
+    try {
+      console.log('1. Opening document picker...');
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["application/pdf", "image/*"],
+        copyToCacheDirectory: true
+      });
+      
+      console.log('2. Document picker result:', result);
+      
+      if (result.canceled) {
+        console.log('User cancelled document picker');
+        return;
+      }
+
+      if (!result.assets || result.assets.length === 0) {
+        console.log('No files selected');
+        Alert.alert("Error", "No file was selected. Please try again.");
+        return;
+      }
+
+      const file = result.assets[0];
+      console.log('3. Selected file details:', {
+        name: file.name,
+        mimeType: file.mimeType,
+        size: file.size,
+        uri: file.uri
+      });
+      
+      // Validate file
+      if (!file.uri) {
+        console.log('File URI is missing');
+        Alert.alert("Error", "File URI is missing. Please try again.");
+        return;
+      }
+      
+      if (file.size && file.size > 10 * 1024 * 1024) { // 10MB limit
+        console.log('File too large:', file.size);
+        Alert.alert("Error", "File is too large. Please select a file smaller than 10MB.");
+        return;
+      }
+      
+      console.log('4. Creating FormData...');
+      const formData = new FormData();
+      formData.append("report", {
+        uri: file.uri, 
+        name: file.name,
+        type: file.mimeType || "application/pdf",
+      } as any);
+      
+      console.log('5. FormData created, setting uploading state...');
+      setUploading(true);
+      
+      const uploadUrl = `${API_BASE}/api/ocr/scan/${activeMember.member_id}`;
+      console.log('6. Upload URL:', uploadUrl);
+      
+      // Add timeout and retry logic
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+      
+      console.log('7. Starting fetch...');
+      const res = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "multipart/form-data", 
+          "x-user-id": String(userId) 
+        },
+        body: formData,
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      console.log('8. Fetch completed, status:', res.status);
+      console.log('9. Response headers:', res.headers);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.log('10. Error response body:', errorText);
+        throw new Error(errorText);
+      }
+      
+      console.log('11. Parsing JSON response...');
+      const data = await res.json();
+      console.log('12. Final OCR response:', data);
+      
+      if (data.message === "Report processed") {
+        console.log('13. Success - refreshing tests...');
+        Alert.alert("Success", "Report analyzed and saved!");
+        // Add small delay to ensure backend has processed the data
+        setTimeout(async () => {
+          await fetchTests();
+        }, 1000);
+      } else {
+        // More specific error messages
+        if (data.error?.includes("extract text")) {
+          Alert.alert("OCR Error", "This PDF appears to be scanned images. Please try a text-based PDF or clear image file.");
+        } else if (data.error?.includes("network") || data.error?.includes("connection")) {
+          Alert.alert("Connection Error", "Network issue. Please check your connection and try again.");
+        } else if (data.error?.includes("file")) {
+          Alert.alert("File Error", "Please check the file format and try again.");
+        } else {
+          Alert.alert("Processing Error", data.error || "Could not process report. Please try again.");
+        }
+      }
+    } catch (err: unknown) {
+      console.error('=== UPLOAD ERROR ===');
+      console.error('Error type:', typeof err);
+      console.error('Error name:', err instanceof Error ? err.name : 'Not an Error');
+      console.error('Error message:', err instanceof Error ? err.message : err);
+      console.error('Full error:', err);
+      
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          Alert.alert("Timeout", "Upload timed out. Please try again with a smaller file.");
+        } else if (err.message?.includes("Network request failed")) {
+          Alert.alert("Network Error", "Please check your internet connection and try again.");
+        } else {
+          Alert.alert("Upload failed", `An error occurred: ${err.message}`);
+        }
+      } else {
+        Alert.alert("Upload failed", "An unknown error occurred while uploading.");
+      }
+    } finally {
+      console.log('=== UPLOAD DEBUG END ===');
+      setUploading(false);
+    }
+  };
+
+  // ── Edit ────────────────────────────────────────────────────
+  const openEdit = (test: TestResult) => {
+    setEditingTest(test);
+    setEditValue(String(test.value));
+    setEditUnit(test.unit ?? "");
+  };
+
+  const saveEdit = async (confirm = false) => {
+    if (!editingTest) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/tests/${editingTest.test_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-user-id": String(userId) },
+        body: JSON.stringify({ value: parseFloat(editValue), unit: editUnit || null, confirm }),
+      });
+      const data = await res.json();
+
+      if (data.requiresConfirmation) {
+        Alert.alert("Unusual Value", data.warning, [
+          { text: "Cancel", style: "cancel" },
+          { text: "Save Anyway", onPress: () => saveEdit(true) },
+        ]);
+      } else if (!res.ok) { 
+        Alert.alert("Error", data.error); 
+        return; 
+      }
+      Alert.alert("Updated", "Test result updated");
+      setEditingTest(null);
+      await fetchTests();
+    } catch {
+      Alert.alert("Error", "Failed to update");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteTest = async (testId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/tests/${testId}`, {
+        method: "DELETE",
+        headers: { "x-user-id": String(userId) },
+      });
+      if (!res.ok) {
+        Alert.alert("Error", "Failed to delete test result");
+        return;
+      }
+      Alert.alert("Deleted", "Test result deleted");
+      await fetchTests();
+    } catch {
+      Alert.alert("Error", "Failed to delete");
+    }
+  };
+
+  const statusColor = (status: string) => {
+    switch (status) {
+      case "normal":
+        return "#34C759";
+      case "abnormal":
+        return "#FFC107";
+      case "critical":
+        return "#FF3737";
+      default:
+        return "#6b7280";
+    }
+  };
+
+  const statusLabel = (status: string) => {
+    switch (status) {
+      case "normal":
+        return "Normal";
+      case "abnormal":
+        return "Abnormal";
+      case "critical":
+        return "Critical";
+      default:
+        return "Unknown";
+    }
+  };
 
   // ── Add Test ───────────────────────────────────────────────
   const handleAddTest = async () => {
@@ -118,7 +336,7 @@ export default function TestScreen() {
         return;
       }
       
-      Alert.alert("Success", "Test result added and stored!");
+      Alert.alert("Success", "Test result added!");
       setShowAddTest(false);
       setNewTestName("");
       setNewTestValue("");
@@ -132,59 +350,7 @@ export default function TestScreen() {
     }
   };
 
-  // ── Edit & Delete functions ─────────────────────────────────
-  const openEdit = (test: TestResult) => {
-    setEditingTest(test);
-    setEditValue(String(test.value));
-    setEditUnit(test.unit ?? "");
-  };
-
-  const saveEdit = async () => {
-    if (!editingTest) return;
-    setSaving(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/tests/${editingTest.test_id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", "x-user-id": String(userId) },
-        body: JSON.stringify({ value: parseFloat(editValue), unit: editUnit || null }),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        Alert.alert("Error", error.error || "Failed to update");
-        return;
-      }
-      Alert.alert("Updated", "Test result updated");
-      setEditingTest(null);
-      await fetchTests();
-    } catch {
-      Alert.alert("Error", "Failed to update");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteTest = async (testId: number) => {
-    try {
-      const res = await fetch(`${API_BASE}/api/tests/${testId}`, {
-        method: "DELETE",
-        headers: { "x-user-id": String(userId) },
-      });
-      if (!res.ok) {
-        Alert.alert("Error", "Failed to delete test result");
-        return;
-      }
-      Alert.alert("Deleted", "Test result deleted");
-      await fetchTests();
-    } catch {
-      Alert.alert("Error", "Failed to delete");
-    }
-  };
-
-  const statusColor = (s: string) =>
-    s === "abnormal" ? "#e63946" : s === "moderate" ? "#f59e0b" : "#16a34a";
-  const statusLabel = (s: string) =>
-    s === "abnormal" ? "Abnormal" : s === "moderate" ? "Moderate" : "Normal";
-
+  // ... (rest of the code remains the same)
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
@@ -203,6 +369,16 @@ export default function TestScreen() {
           )}
 
           <TouchableOpacity
+            style={[styles.uploadBtn, uploading && { opacity: 0.6 }]}
+            onPress={handleUpload} disabled={uploading}
+          >
+            <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
+            <Text style={styles.uploadText}>
+              {uploading ? "Processing..." : "Upload Report (PDF / Image)"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.addTestBtn, addingTest && { opacity: 0.6 }]}
             onPress={() => setShowAddTest(true)} disabled={addingTest}
           >
@@ -213,7 +389,7 @@ export default function TestScreen() {
           {loading ? (
             <ActivityIndicator color="#29A9F8" size="large" style={{ marginTop: 40 }} />
           ) : grouped.length === 0 ? (
-            <Text style={styles.empty}>No test results yet. Add a test result to get started.</Text>
+            <Text style={styles.empty}>No test results yet. Upload a report to get started.</Text>
           ) : (
             grouped.map((group) => (
               <View key={group.date}>
@@ -276,7 +452,7 @@ export default function TestScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.saveBtn, saving && { opacity: 0.6 }]}
-                  onPress={saveEdit} disabled={saving}
+                  onPress={() => saveEdit(false)} disabled={saving}
                 >
                   <Text style={{ color: "#fff", fontWeight: "600" }}>
                     {saving ? "Saving..." : "Save"}
@@ -332,6 +508,11 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
   title: { fontSize: 18, fontWeight: "600", color: "#1f2937" },
   memberLabel: { fontSize: 13, color: "#6b7280", marginBottom: 16 },
+  uploadBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    backgroundColor: "#29A9F8", padding: 14, borderRadius: 12, marginBottom: 20,
+  },
+  uploadText: { color: "#fff", marginLeft: 8, fontWeight: "600" },
   addTestBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
     backgroundColor: "#16a34a", padding: 14, borderRadius: 12, marginBottom: 20,
