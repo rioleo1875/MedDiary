@@ -54,8 +54,7 @@ router.get("/member/:memberId", async (req, res) => {
     const [rows] = await db.query(
       `SELECT
          test_id, member_id, test_name, value, unit,
-         normal_min, normal_max, status, test_date,
-         edited_by_user, edited_at
+         normal_min, normal_max, status, test_date
        FROM test_results
        WHERE member_id = ?
        ORDER BY test_date DESC, test_name ASC`,
@@ -135,18 +134,10 @@ router.patch("/:testId", async (req, res) => {
     const newStatus = classify(numericValue, normal_min, normal_max);
     const newUnit = unit !== undefined ? unit : existing.old_unit;
 
-    // Save old value to audit trail before overwriting
-    await db.query(
-      `INSERT INTO edit_history
-         (test_id, member_id, test_name, old_value, old_unit, old_status, changed_at)
-       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-      [testId, existing.member_id, test_name, existing.old_value, existing.old_unit, existing.old_status]
-    );
-
     // Update the result
     await db.query(
       `UPDATE test_results
-       SET value = ?, unit = ?, status = ?, edited_by_user = 1, edited_at = NOW()
+       SET value = ?, unit = ?, status = ?
        WHERE test_id = ?`,
       [numericValue, newUnit, newStatus, testId]
     );
@@ -162,20 +153,6 @@ router.patch("/:testId", async (req, res) => {
   } catch (error) {
     console.error("PATCH /tests/:testId error:", error);
     res.status(500).json({ error: "Failed to update result" });
-  }
-});
-
-
-router.get("/history/:testId", async (req, res) => {
-  try {
-    const [rows] = await db.query(
-      `SELECT * FROM edit_history WHERE test_id = ? ORDER BY changed_at DESC`,
-      [req.params.testId]
-    );
-    res.json(rows);
-  } catch (error) {
-    console.error("GET /tests/history/:testId error:", error);
-    res.status(500).json({ error: "Failed to fetch edit history" });
   }
 });
 

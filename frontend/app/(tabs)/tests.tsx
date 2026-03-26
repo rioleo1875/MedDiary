@@ -19,7 +19,6 @@ type TestResult = {
   normal_max: number;
   status: string;
   test_date: string;
-  edited_by_user: number;
 };
 
 type GroupedDate = { date: string; results: TestResult[] };
@@ -292,9 +291,9 @@ export default function TestScreen() {
     switch (status) {
       case "normal":
         return "#34C759";
-      case "abnormal":
+      case "moderate":
         return "#FFC107";
-      case "critical":
+      case "abnormal":
         return "#FF3737";
       default:
         return "#6b7280";
@@ -305,10 +304,10 @@ export default function TestScreen() {
     switch (status) {
       case "normal":
         return "Normal";
+      case "moderate":
+        return "Moderate";
       case "abnormal":
         return "Abnormal";
-      case "critical":
-        return "Critical";
       default:
         return "Unknown";
     }
@@ -458,9 +457,6 @@ export default function TestScreen() {
                     <Text style={[styles.statusText, { color: statusColor(t.status) }]}>
                       {statusLabel(t.status)}
                     </Text>
-                    {t.edited_by_user === 1 && (
-                      <Text style={styles.editedTag}> · Edited</Text>
-                    )}
                   </View>
                 </View>
               ))}
