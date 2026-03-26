@@ -29,7 +29,7 @@ export default function GenerateSummary() {
 
     try {
       console.log('Summary: Generating PDF for member:', activeMember.member_id);
-      const url = `${API_BASE}/api/summary/generate/${activeMember.member_id}?userId=${userId}`;
+      const url = `${API_BASE}/api/summary/generate/${activeMember.member_id}`;
       
       // Open the PDF URL in browser - this should work in Expo Go
       const supported = await Linking.canOpenURL(url);
