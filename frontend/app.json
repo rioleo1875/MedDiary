@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "extra": {
-      "apiUrl": "https://meddiary-production-bc12.up.railway.app",
+      "apiUrl": "https://meddiary-production.up.railway.app",
       "router": {},
       "eas": {
         "projectId": "a8c9120d-c4bc-4d32-b41d-d9a1805309a2"
