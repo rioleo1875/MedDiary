@@ -49,23 +49,52 @@ export default function TestScreen() {
   const fetchTests = useCallback(async () => {
     if (!activeMember) return;
     setLoading(true);
-    try {
-      const res = await fetch(
-        `${API_BASE}/api/tests/member/${activeMember.member_id}`,
-        { headers: { "x-user-id": String(userId) } }
-      );
-      const data = await res.json();
-      console.log('=== FETCH TESTS DEBUG ===');
-      console.log('API Response:', data);
-      console.log('groupedByDate:', data.groupedByDate);
-      console.log('Setting grouped to:', data.groupedByDate ?? []);
-      setGrouped(data.groupedByDate ?? []);
-    } catch {
-      Alert.alert("Error", "Failed to load test results");
-    } finally {
-      setLoading(false);
-    }
-  }, [activeMember?.member_id]);
+    
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    const attemptFetch = async (): Promise<void> => {
+      try {
+        console.log(`=== FETCH TESTS DEBUG (Attempt ${retryCount + 1}) ===`);
+        const res = await fetch(
+          `${API_BASE}/api/tests/member/${activeMember.member_id}`,
+          { headers: { "x-user-id": String(userId) } }
+        );
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('Fetch failed:', res.status, errorText);
+          throw new Error(`HTTP ${res.status}: ${errorText}`);
+        }
+        
+        const data = await res.json();
+        console.log('API Response:', data);
+        console.log('groupedByDate:', data.groupedByDate);
+        console.log('Setting grouped to:', data.groupedByDate ?? []);
+        setGrouped(data.groupedByDate ?? []);
+      } catch (err) {
+        console.error(`Fetch attempt ${retryCount + 1} failed:`, err);
+        
+        if (retryCount < maxRetries - 1) {
+          retryCount++;
+          console.log(`Retrying in 1 second... (${retryCount}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return attemptFetch();
+        } else {
+          // Final attempt failed
+          if (err instanceof Error && err.message.includes('Network request failed')) {
+            Alert.alert("Network Error", "Please check your internet connection and try again.");
+          } else {
+            Alert.alert("Error", "Failed to load test results. Please try again.");
+          }
+          setGrouped([]);
+        }
+      }
+    };
+    
+    await attemptFetch();
+    setLoading(false);
+  }, [activeMember?.member_id, userId]);
 
   useFocusEffect(useCallback(() => { fetchTests(); }, [fetchTests]));
 
@@ -390,51 +419,53 @@ export default function TestScreen() {
             <Text style={styles.addTestText}>Add Test Result</Text>
           </TouchableOpacity>
 
-          {loading ? (
-            <ActivityIndicator color="#29A9F8" size="large" style={{ marginTop: 40 }} />
-          ) : grouped.length === 0 ? (
-            <Text style={styles.empty}>No test results yet. Upload a report to get started.</Text>
-          ) : (
-            grouped.map((group) => (
-              <View key={group.date}>
-                <Text style={styles.dateHeader}>
-                  {new Date(group.date).toLocaleDateString("en-GB", {
-                    day: "2-digit", month: "short", year: "numeric",
-                  })}
-                </Text>
-                {group.results.map((t) => (
-                  <View key={t.test_id} style={styles.card}>
-                    <View style={styles.cardTop}>
-                      <Text style={styles.name}>{t.test_name}</Text>
-                      <View style={styles.actions}>
-                        <TouchableOpacity onPress={() => openEdit(t)} style={{ marginRight: 12 }}>
-                          <Ionicons name="pencil" size={16} color="#29A9F8" />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => deleteTest(t.test_id)}>
-                          <Ionicons name="trash" size={16} color="#e63946" />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                    <Text style={styles.value}>
-                      {t.value}{t.unit ? ` ${t.unit}` : ""}
-                    </Text>
-                    <Text style={styles.range}>
-                      Normal: {t.normal_min} – {t.normal_max}{t.unit ? ` ${t.unit}` : ""}
-                    </Text>
-                    <View style={styles.statusRow}>
-                      <View style={[styles.dot, { backgroundColor: statusColor(t.status) }]} />
-                      <Text style={[styles.statusText, { color: statusColor(t.status) }]}>
-                        {statusLabel(t.status)}
-                      </Text>
-                      {t.edited_by_user === 1 && (
-                        <Text style={styles.editedTag}> · Edited</Text>
-                      )}
+          <TouchableOpacity
+            style={[styles.refreshBtn, loading && { opacity: 0.6 }]}
+            onPress={() => fetchTests()} disabled={loading}
+          >
+            <Ionicons name="refresh-outline" size={20} color="#fff" />
+            <Text style={styles.refreshText}>Refresh</Text>
+          </TouchableOpacity>
+
+          {grouped.map((group) => (
+            <View key={group.date}>
+              <Text style={styles.dateHeader}>
+                {new Date(group.date).toLocaleDateString("en-GB", {
+                  day: "2-digit", month: "short", year: "numeric",
+                })}
+              </Text>
+              {group.results.map((t) => (
+                <View key={t.test_id} style={styles.card}>
+                  <View style={styles.cardTop}>
+                    <Text style={styles.name}>{t.test_name}</Text>
+                    <View style={styles.actions}>
+                      <TouchableOpacity onPress={() => openEdit(t)} style={{ marginRight: 12 }}>
+                        <Ionicons name="pencil" size={16} color="#29A9F8" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => deleteTest(t.test_id)}>
+                        <Ionicons name="trash" size={16} color="#e63946" />
+                      </TouchableOpacity>
                     </View>
                   </View>
-                ))}
-              </View>
-            ))
-          )}
+                  <Text style={styles.value}>
+                    {t.value}{t.unit ? ` ${t.unit}` : ""}
+                  </Text>
+                  <Text style={styles.range}>
+                    Normal: {t.normal_min} – {t.normal_max}{t.unit ? ` ${t.unit}` : ""}
+                  </Text>
+                  <View style={styles.statusRow}>
+                    <View style={[styles.dot, { backgroundColor: statusColor(t.status) }]} />
+                    <Text style={[styles.statusText, { color: statusColor(t.status) }]}>
+                      {statusLabel(t.status)}
+                    </Text>
+                    {t.edited_by_user === 1 && (
+                      <Text style={styles.editedTag}> · Edited</Text>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+          ))}
         </ScrollView>
 
         {/* EDIT MODAL */}
@@ -522,6 +553,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#16a34a", padding: 14, borderRadius: 12, marginBottom: 20,
   },
   addTestText: { color: "#fff", marginLeft: 8, fontWeight: "600" },
+  refreshBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    backgroundColor: "#6b7280", padding: 14, borderRadius: 12, marginBottom: 20,
+  },
+  refreshText: { color: "#fff", marginLeft: 8, fontWeight: "600" },
   dateHeader: { fontSize: 13, fontWeight: "700", color: "#6b7280", marginBottom: 8, marginTop: 4 },
   card: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 12, elevation: 3 },
   cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
