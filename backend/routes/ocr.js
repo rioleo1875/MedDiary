@@ -1,29 +1,13 @@
 const express = require("express");
 const multer = require("multer");
 const Tesseract = require("tesseract.js");
-const fs = require("fs");
 
 const parseLabReport = require("../services/parseLabReport");
 const testDictionary = require("../services/testDictionary");
 
-// Try to load PDF services, but provide fallback
-let extractPDFText, convertPDFToImages;
-
-try {
-  extractPDFText = require("../services/pdfParser");
-  console.log("✅ pdfParser loaded successfully");
-} catch (err) {
-  console.log("⚠️ pdfParser not available, using fallback");
-  extractPDFText = async () => ""; // Fallback to OCR
-}
-
-try {
-  convertPDFToImages = require("../services/pdfToImage");
-  console.log("✅ pdfToImage loaded successfully");
-} catch (err) {
-  console.log("⚠️ pdfToImage not available, using fallback");
-  convertPDFToImages = async () => []; // Fallback
-}
+// PDF services disabled due to Linux compatibility issues
+const extractPDFText = async () => ""; // PDF text extraction disabled
+const convertPDFToImages = async () => []; // PDF to image conversion disabled
 
 const router = express.Router();
 
@@ -81,44 +65,11 @@ router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
 
     if (mime === "application/pdf") {
 
-      console.log("Trying PDF parser...");
-
-      try {
-        text = await extractPDFText(filePath);
-        console.log("PDF parser extracted text length:", text?.length || 0);
-        
-        // Only use OCR fallback if PDF extraction fails or returns minimal text
-        if (!text || text.trim().length < 50) {
-          console.log("PDF text insufficient, switching to OCR fallback");
-          
-          const imagePaths = await convertPDFToImages(filePath);
-          let pages = [];
-
-          for (const img of imagePaths) {
-            const result = await Tesseract.recognize(img, "eng");
-            pages.push(result.data.text);
-            try { fs.unlinkSync(img); } catch {}
-          }
-
-          text = pages.join("\n");
-          console.log("OCR extracted text length:", text?.length || 0);
-        } else {
-          console.log("PDF text extraction successful, skipping OCR");
-        }
-      } catch (e) {
-        console.log("PDF parser failed, using OCR fallback:", e.message);
-        
-        const imagePaths = await convertPDFToImages(filePath);
-        let pages = [];
-
-        for (const img of imagePaths) {
-          const result = await Tesseract.recognize(img, "eng");
-          pages.push(result.data.text);
-          try { fs.unlinkSync(img); } catch {}
-        }
-
-        text = pages.join("\n");
-      }
+      console.log("PDF processing disabled - only image OCR supported");
+      
+      return res.status(400).json({ 
+        error: "PDF processing is currently disabled. Please upload an image file (JPG, PNG, etc.) instead of a PDF." 
+      });
 
     } else {
 
@@ -137,7 +88,7 @@ router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
 
     if (!text || text.trim().length === 0) {
       return res.status(400).json({ 
-        error: "Could not extract text from PDF. Please ensure the PDF contains readable text (not scanned images) and try again." 
+        error: "Could not extract text from image. Please ensure the image is clear and contains readable text." 
       });
     }
 
