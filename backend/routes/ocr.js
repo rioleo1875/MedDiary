@@ -4,10 +4,8 @@ const Tesseract = require("tesseract.js");
 
 const parseLabReport = require("../services/parseLabReport");
 const testDictionary = require("../services/testDictionary");
-
-// PDF services disabled due to Linux compatibility issues
-const extractPDFText = async () => ""; // PDF text extraction disabled
-const convertPDFToImages = async () => []; // PDF to image conversion disabled
+const extractPDFText = require("../services/pdfParser");
+const convertPDFToImages = require("../services/pdfToImage");
 
 const router = express.Router();
 
@@ -64,12 +62,16 @@ router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
     let text = "";
 
     if (mime === "application/pdf") {
-
-      console.log("PDF processing disabled - only image OCR supported");
       
-      return res.status(400).json({ 
-        error: "PDF processing is currently disabled. Please upload an image file (JPG, PNG, etc.) instead of a PDF." 
-      });
+      console.log("Processing PDF with text extraction");
+      
+      text = await extractPDFText(filePath);
+      
+      if (!text || text.trim().length === 0) {
+        return res.status(400).json({ 
+          error: "Could not extract text from PDF. Please ensure the PDF contains readable text (not scanned images)." 
+        });
+      }
 
     } else {
 

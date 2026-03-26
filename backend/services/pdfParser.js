@@ -1,50 +1,35 @@
-// PDF Parser disabled due to Linux compatibility issues
-// global.DOMMatrix = require("@thednp/dommatrix"); 
-// const fs = require("fs");
+global.DOMMatrix = require("@thednp/dommatrix");
+const pdfParseImport = require("pdf-parse");
+const pdfParse = pdfParseImport.default || pdfParseImport;
+const fs = require("fs");
 
-// async function extractPDFText(filePath) {
-//   const pdfjsLib = await import("pdfjs-dist");
-//   try {
-//     const dataBuffer = fs.readFileSync(filePath);
-//     const data = new Uint8Array(dataBuffer);
+async function extractPDFText(filePath) {
+  try {
 
-//     const loadingTask = pdfjsLib.getDocument({ data });
-//     const pdf = await loadingTask.promise;
+    const dataBuffer = fs.readFileSync(filePath);
 
-//     let text = "";
+    const data = await pdfParse(dataBuffer);
 
-//     for (let i = 1; i <= pdf.numPages; i++) {
-//       const page = await pdf.getPage(i);
-//       const content = await page.getTextContent();
+    let text = data.text || "";
 
-//       const pageText = content.items.map((item) => item.str).join(" ");
-//       text += pageText + "\n";
-//     }
+    text = text
+      .replace(/\r/g, "")
+      .replace(/\n+/g, "\n")
+      .replace(/\s{2,}/g, " ")
+      .trim();
 
+    console.log("====== RAW PDF TEXT ======");
+    console.log(text);
+    console.log("==========================");
 
-//     text = text
-//       .replace(/\r/g, "")
-//       .replace(/\n+/g, "\n")
-//       .replace(/\s{2,}/g, " ")
-//       .trim();
+    return text;
 
-//     console.log("====== RAW PDF TEXT ======");
-//     console.log(text);
-//     console.log("==========================");
+  } catch (error) {
 
-//     return text;
+    console.error("PDF parse failed:", error);
 
-//   } catch (error) {
-//     console.error("PDF parse failed:", error);
-//     return "";
-//   }
-// }
-
-// module.exports = extractPDFText;
-
-// Return empty function to prevent crashes
-async function extractPDFText() {
-  return "";
+    return "";
+  }
 }
 
 module.exports = extractPDFText;
