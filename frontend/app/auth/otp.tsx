@@ -54,7 +54,7 @@ const verifyOtp = async () => {
     if (data.success) {
       console.log('OTP Screen: OTP verification successful, calling login...');
       try {
-        await login(email as string, data.user);
+        await login(email as string);
         console.log('OTP Screen: Login completed, navigating to tabs...');
         router.replace("/(tabs)");
       } catch (error) {

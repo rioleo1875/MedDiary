@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE } from './MemberContext';
 
 type AuthContextType = {
   isAuthenticated: boolean;
   email: string | null;
   userId: number | null;
   isInitialized: boolean;
-  login: (email: string, user?: any) => Promise<void>;
+  login: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 };
@@ -23,14 +24,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('AuthContext: Checking auth...');
       const storedEmail = await AsyncStorage.getItem('userEmail');
-      const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
       const storedUserId = await AsyncStorage.getItem('userId');
-      console.log('AuthContext: Found stored data', { storedEmail, isLoggedIn, storedUserId });
+      const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
+      console.log('AuthContext: Found stored data', { storedEmail, storedUserId, isLoggedIn });
       
-      if (storedEmail && isLoggedIn === 'true') {
+      if (storedEmail && isLoggedIn === 'true' && storedUserId) {
         console.log('AuthContext: User is authenticated');
         setEmail(storedEmail);
-        setUserId(storedUserId ? parseInt(storedUserId, 10) : null);
+        setUserId(parseInt(storedUserId));
         setIsAuthenticated(true);
       } else {
         console.log('AuthContext: User is not authenticated');
@@ -49,18 +50,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (userEmail: string, user?: any) => {
+  const login = async (userEmail: string) => {
     try {
       console.log('AuthContext: Starting login process for:', userEmail);
-      await AsyncStorage.setItem('userEmail', userEmail);
-      await AsyncStorage.setItem('isLoggedIn', 'true');
       
-      if (user && user.user_id) {
-        await AsyncStorage.setItem('userId', String(user.user_id));
-        setUserId(user.user_id);
+      // Call OTP verification endpoint to get user_id
+      const response = await fetch(`${API_BASE}/api/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail, otp: '000000' }) // Dummy OTP for testing
+      });
+      
+      if (!response.ok) {
+        throw new Error('Login failed');
       }
       
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || 'Login failed');
+      }
+      
+      await AsyncStorage.setItem('userEmail', userEmail);
+      await AsyncStorage.setItem('userId', data.user_id.toString());
+      await AsyncStorage.setItem('isLoggedIn', 'true');
       setEmail(userEmail);
+      setUserId(data.user_id);
       setIsAuthenticated(true);
       setIsInitialized(true);
       console.log('AuthContext: Login completed successfully');
@@ -73,9 +87,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await AsyncStorage.removeItem('userEmail');
+      await AsyncStorage.removeItem('userId');
       await AsyncStorage.removeItem('isLoggedIn');
       await AsyncStorage.removeItem('activeMemberId');
-      await AsyncStorage.removeItem('userId');
       setEmail(null);
       setUserId(null);
       setIsAuthenticated(false);

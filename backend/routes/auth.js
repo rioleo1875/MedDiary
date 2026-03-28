@@ -75,13 +75,16 @@ router.post("/verify-otp", async (req, res) => {
 
   delete otpStore[email];
   
-  // Get user info from database
-  const [userRows] = await db.query("SELECT user_id, name, user_email FROM users WHERE user_email = ?", [email]);
+  // Get user_id for this email
+  const [userRows] = await db.query("SELECT user_id FROM users WHERE user_email = ?", [email]);
+  if (userRows.length === 0) {
+    return res.status(400).json({ success: false, message: "User not found" });
+  }
   
   res.json({ 
     success: true, 
     message: "OTP verified",
-    user: userRows[0]
+    user_id: userRows[0].user_id
   });
 });
 

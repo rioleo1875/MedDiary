@@ -1,7 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
-const { getUserId } = require("../middleware/auth");
+
+
+function getUserId(req) {
+  return parseInt(req.headers["x-user-id"], 10);
+}
 
 
 router.get("/members", async (req, res) => {
