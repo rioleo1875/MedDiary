@@ -5,7 +5,13 @@ const PDFDocument = require("pdfkit");
 
 
 function getUserId(req) {
-  return parseInt(req.headers["x-user-id"], 10);
+  // Try header first (for fetch requests)
+  const fromHeader = parseInt(req.headers["x-user-id"], 10);
+  if (fromHeader) return fromHeader;
+  
+  // Fallback to query parameter (for browser access)
+  const fromQuery = parseInt(req.query.token, 10);
+  return fromQuery || 0;
 }
 
 async function buildSummaryPDF(memberId, doc) {

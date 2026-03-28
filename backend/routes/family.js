@@ -79,13 +79,20 @@ router.patch("/members/:memberId", async (req, res) => {
     const { memberId } = req.params;
     const { name, age, gender, blood_group, relation, allergies } = req.body;
 
-    // Verify ownership
-    const [ownerCheck] = await db.query(
-      `SELECT member_id FROM family_members WHERE member_id = ? AND user_id = ?`,
+    // Verify ownership and get relation
+    const [rows] = await db.query(
+      `SELECT member_id, relation FROM family_members
+       WHERE member_id = ? AND user_id = ?`,
       [memberId, userId]
     );
-    if (ownerCheck.length === 0) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: "Member not found" });
+    }
+
+    // Prevent editing NULL members (corrupted data)
+    const member = rows[0];
+    if (!member.name || member.name === null) {
+      return res.status(400).json({ error: "Cannot edit corrupted member data" });
     }
 
     await db.query(
@@ -118,6 +125,11 @@ router.delete("/members/:memberId", async (req, res) => {
     );
     if (rows.length === 0) {
       return res.status(404).json({ error: "Member not found" });
+    }
+
+    // Prevent deleting NULL members (corrupted data)
+    if (!rows[0].name || rows[0].name === null) {
+      return res.status(400).json({ error: "Cannot delete corrupted member data" });
     }
 
     // Prevent deleting Self if other members still exist
