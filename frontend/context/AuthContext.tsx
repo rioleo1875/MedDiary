@@ -7,7 +7,7 @@ type AuthContextType = {
   email: string | null;
   userId: number | null;
   isInitialized: boolean;
-  login: (email: string) => Promise<void>;
+  login: (email: string, userId: number) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 };
@@ -50,31 +50,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (userEmail: string) => {
+  const login = async (userEmail: string, userId: number) => {
     try {
-      console.log('AuthContext: Starting login process for:', userEmail);
-      
-      // Call OTP verification endpoint to get user_id
-      const response = await fetch(`${API_BASE}/api/auth/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userEmail, otp: '000000' }) // Dummy OTP for testing
-      });
-      
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
-      
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.message || 'Login failed');
-      }
+      console.log('AuthContext: Starting login process for:', userEmail, 'userId:', userId);
       
       await AsyncStorage.setItem('userEmail', userEmail);
-      await AsyncStorage.setItem('userId', data.user_id.toString());
+      await AsyncStorage.setItem('userId', userId.toString());
       await AsyncStorage.setItem('isLoggedIn', 'true');
       setEmail(userEmail);
-      setUserId(data.user_id);
+      setUserId(userId);
       setIsAuthenticated(true);
       setIsInitialized(true);
       console.log('AuthContext: Login completed successfully');
