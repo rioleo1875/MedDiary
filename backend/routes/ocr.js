@@ -94,7 +94,9 @@ router.post("/scan/:memberId", upload.single("report"), async (req, res) => {
       });
     }
 
+    console.log("Calling parseLabReport with memberId:", memberId);
     await parseLabReport(text, memberId);
+    console.log("parseLabReport completed");
 
     res.json({
       message: "Report processed",

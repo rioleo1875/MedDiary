@@ -15,21 +15,26 @@ function getUserId(req) {
 }
 
 async function buildSummaryPDF(memberId, doc) {
+  console.log("Building summary PDF for member:", memberId);
+  
   const [tests] = await db.query(
     "SELECT * FROM test_results WHERE member_id = ? ORDER BY test_date DESC",
     [memberId]
   );
+  console.log("Found test results:", tests.length, "for member:", memberId);
 
   const [patientRows] = await db.query(
     "SELECT name, age, blood_group, allergies FROM family_members WHERE member_id = ?",
     [memberId]
   );
   const patient = patientRows[0] || {};
+  console.log("Patient data:", patient);
 
   const [medications] = await db.query(
     "SELECT med_name FROM medications WHERE member_id = ?",
     [memberId]
   );
+  console.log("Found medications:", medications.length, "for member:", memberId);
 
   // Border
   doc.rect(20, 20, doc.page.width - 40, doc.page.height - 40).stroke();

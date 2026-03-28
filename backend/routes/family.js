@@ -89,12 +89,6 @@ router.patch("/members/:memberId", async (req, res) => {
       return res.status(404).json({ error: "Member not found" });
     }
 
-    // Prevent editing NULL members (corrupted data)
-    const member = rows[0];
-    if (!member.name || member.name === null) {
-      return res.status(400).json({ error: "Cannot edit corrupted member data" });
-    }
-
     await db.query(
       `UPDATE family_members
        SET name = ?, age = ?, gender = ?, blood_group = ?, relation = ?, allergies = ?
@@ -125,11 +119,6 @@ router.delete("/members/:memberId", async (req, res) => {
     );
     if (rows.length === 0) {
       return res.status(404).json({ error: "Member not found" });
-    }
-
-    // Prevent deleting NULL members (corrupted data)
-    if (!rows[0].name || rows[0].name === null) {
-      return res.status(400).json({ error: "Cannot delete corrupted member data" });
     }
 
     // Prevent deleting Self if other members still exist
