@@ -400,6 +400,13 @@ export default function TestScreen() {
             <Text style={styles.memberLabel}>Viewing {activeMember.name}'s results</Text>
           )}
 
+          <View style={styles.warningCard}>
+            <Ionicons name="warning-outline" size={20} color="#FF9500" style={{ marginRight: 8 }} />
+            <Text style={styles.warningText}>
+              ⚠️ Please cross-check all parsed results with your original report and edit if necessary for accuracy
+            </Text>
+          </View>
+
           <TouchableOpacity
             style={[styles.uploadBtn, uploading && { opacity: 0.6 }]}
             onPress={handleUpload} disabled={uploading}
@@ -554,6 +561,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#6b7280", padding: 14, borderRadius: 12, marginBottom: 20,
   },
   refreshText: { color: "#fff", marginLeft: 8, fontWeight: "600" },
+  warningCard: {
+    backgroundColor: "#FFF3CD",
+    borderLeftWidth: 4,
+    borderLeftColor: "#FF9500",
+    padding: 12,
+    marginBottom: 16,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center"
+  },
+  warningText: {
+    color: "#856404",
+    fontSize: 12,
+    flex: 1,
+    lineHeight: 16
+  },
   dateHeader: { fontSize: 13, fontWeight: "700", color: "#6b7280", marginBottom: 8, marginTop: 4 },
   card: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 12, elevation: 3 },
   cardTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },

@@ -121,7 +121,9 @@ router.delete("/members/:memberId", async (req, res) => {
       return res.status(404).json({ error: "Member not found" });
     }
 
-    // Prevent deleting Self if other members still exist
+    console.log("Deleting member:", rows[0]);
+
+    // Prevent deleting Self if other members still exist (only if relation is explicitly "Self")
     if (rows[0].relation === "Self") {
       const [otherMembers] = await db.query(
         `SELECT COUNT(*) as count FROM family_members

@@ -31,21 +31,8 @@ export default function GenerateSummary() {
       console.log('Summary: Generating PDF for member:', activeMember.member_id);
       const url = `${API_BASE}/api/summary/generate/${activeMember.member_id}`;
       
-      // Use fetch to properly send authentication headers
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'x-user-id': userId.toString(),
-          'Accept': 'application/pdf'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      // For React Native, try to open the URL directly with auth
-      // This will open in browser with the PDF
+      // For React Native, open the URL directly with token parameter
+      // This will work in browser and handle authentication properly
       const authUrl = `${url}?token=${userId}`;
       const supported = await Linking.canOpenURL(authUrl);
       if (supported) {
@@ -53,7 +40,7 @@ export default function GenerateSummary() {
         console.log('Summary: PDF opened in browser');
         Alert.alert("Success", "PDF generated and opened!");
       } else {
-        Alert.alert("Success", "PDF generated! Check your browser downloads.");
+        Alert.alert("Error", "Cannot open PDF. Please check your browser settings.");
       }
     } catch (err) {
       console.error('Summary: Error generating PDF:', err);
