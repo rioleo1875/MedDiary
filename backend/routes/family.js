@@ -145,6 +145,13 @@ router.delete("/members/:memberId", async (req, res) => {
     }
 
     console.log("Proceeding with deletion...");
+    
+    // First delete related data to avoid foreign key constraints
+    await db.query(`DELETE FROM medications WHERE member_id = ?`, [memberId]);
+    await db.query(`DELETE FROM test_results WHERE member_id = ?`, [memberId]);
+    await db.query(`DELETE FROM medication_reminders WHERE member_id = ?`, [memberId]);
+    
+    // Then delete the family member
     const [deleteResult] = await db.query(
       `DELETE FROM family_members WHERE member_id = ? AND user_id = ?`,
       [memberId, userId]
