@@ -12,10 +12,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import ChatBubble from "../../components/ChatBubble";
 import { useMember, API_BASE } from "../../context/MemberContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function FamilyScreen() {
   const router = useRouter();
   const { members, activeMember, setActiveMember, refreshMembers } = useMember();
+  const { userId } = useAuth();
 
   useFocusEffect(
     useCallback(() => {
@@ -33,7 +35,7 @@ export default function FamilyScreen() {
           try {
             const res = await fetch(`${API_BASE}/api/family/members/${memberId}`, {
               method: "DELETE",
-              headers: { "x-user-id": "1" }
+              headers: { "x-user-id": String(userId) }
             });
             
             if (res.ok) {

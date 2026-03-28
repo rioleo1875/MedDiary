@@ -5,10 +5,12 @@ import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import ChatBubble from "../../components/ChatBubble";
 import { useMember, API_BASE } from "../../context/MemberContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ImmunizationScreen() {
   const router = useRouter();
   const { activeMember } = useMember();
+  const { userId } = useAuth();
   const [vaccines, setVaccines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -21,7 +23,7 @@ export default function ImmunizationScreen() {
     
     try {
       const response = await fetch(`${API_BASE}/api/immunizations/member/${activeMember.member_id}`, {
-        headers: { "x-user-id": "1" },
+        headers: { "x-user-id": String(userId) },
       });
       const data = await response.json();
       setVaccines(data || []);
@@ -50,7 +52,7 @@ export default function ImmunizationScreen() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": "1",
+          "x-user-id": String(userId),
         },
         body: JSON.stringify({
           name: newVaccineName.trim(),
@@ -79,7 +81,7 @@ export default function ImmunizationScreen() {
     try {
       const response = await fetch(`${API_BASE}/api/immunizations/member/${activeMember.member_id}/${index}`, {
         method: "DELETE",
-        headers: { "x-user-id": "1" },
+        headers: { "x-user-id": String(userId) },
       });
 
       if (response.ok) {
