@@ -12,9 +12,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useMember, API_BASE } from "../../context/MemberContext";
+import { useAuth } from "../../context/AuthContext";
 
 export default function AddMemberScreen() {
   const router = useRouter();
+  const { userId } = useAuth();
+  const { refreshMembers } = useMember();
 
   const { member } = useLocalSearchParams();
   const parsedMember = member ? JSON.parse(member as string) : null;
@@ -40,7 +43,7 @@ export default function AddMemberScreen() {
     const finalRelation =
       relation === "Other" ? customRelation : relation;
 
-    if (!name || !age || !gender || !blood || !finalRelation) {
+    if (!name || !age || !gender || !blood || !finalRelation || !userId) {
       Alert.alert("Error", "Please fill all fields");
       return;
     }
@@ -61,7 +64,7 @@ export default function AddMemberScreen() {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            "x-user-id": "1"
+            "x-user-id": String(userId)
           },
           body: JSON.stringify(memberData)
         });
@@ -71,7 +74,7 @@ export default function AddMemberScreen() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-user-id": "1"
+            "x-user-id": String(userId)
           },
           body: JSON.stringify(memberData)
         });
@@ -79,6 +82,7 @@ export default function AddMemberScreen() {
 
       if (res.ok) {
         Alert.alert("Success", parsedMember ? "Member updated successfully" : "Member added successfully");
+        await refreshMembers(); // Refresh the member list
         router.back();
       } else {
         Alert.alert("Error", "Failed to save member");
