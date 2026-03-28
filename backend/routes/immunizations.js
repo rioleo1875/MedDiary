@@ -1,10 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
-
-function getUserId(req) {
-  return parseInt(req.headers["x-user-id"], 10);
-}
+const { getUserId } = require("../middleware/auth");
 
 // Get immunizations for a specific family member
 router.get("/member/:memberId", async (req, res) => {

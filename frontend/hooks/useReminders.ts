@@ -34,15 +34,24 @@ export type Reminder = {
 
 
 export async function requestNotificationPermissions(): Promise<boolean> {
+  console.log("Requesting notification permissions...");
+  
   if (!Device.isDevice) {
-   
+    console.log("Not a real device, skipping notifications");
     return false;
   }
 
   const { status: existing } = await Notifications.getPermissionsAsync();
-  if (existing === "granted") return true;
+  console.log("Existing permission status:", existing);
+  
+  if (existing === "granted") {
+    console.log("Permissions already granted");
+    return true;
+  }
 
   const { status } = await Notifications.requestPermissionsAsync();
+  console.log("Permission request result:", status);
+  
   if (status !== "granted") {
     Alert.alert(
       "Permission Required",
@@ -52,6 +61,7 @@ export async function requestNotificationPermissions(): Promise<boolean> {
   }
 
   if (Platform.OS === "android") {
+    console.log("Setting up Android notification channel");
     await Notifications.setNotificationChannelAsync("medication-reminders", {
       name: "Medication Reminders",
       importance: Notifications.AndroidImportance.HIGH,
@@ -59,6 +69,7 @@ export async function requestNotificationPermissions(): Promise<boolean> {
     });
   }
 
+  console.log("Permissions granted successfully");
   return true;
 }
 
@@ -71,22 +82,30 @@ async function scheduleNotification(
 ): Promise<string> {
   const title = label ? `${label} — ${medName}` : `Time to take ${medName}`;
 
-  const id = await Notifications.scheduleNotificationAsync({
-    content: {
-      title,
-      body: "Tap to open MedDiary",
-      sound: "default",
-      data: { medName },
-    },
-    trigger: {
+  console.log("Scheduling notification:", { title, hour, minute });
+
+  try {
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body: "Tap to open MedDiary",
+        sound: "default",
+        data: { medName },
+      },
+      trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
         hour,
         minute,
         repeats: true, 
-    } as Notifications.DailyTriggerInput,
-  });
+      } as Notifications.DailyTriggerInput,
+    });
 
-  return id;
+    console.log("Notification scheduled successfully:", id);
+    return id;
+  } catch (error) {
+    console.error("Failed to schedule notification:", error);
+    throw error;
+  }
 }
 
 

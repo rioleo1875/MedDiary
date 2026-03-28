@@ -1,10 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
-
-function getUserId(req) {
-  return parseInt(req.headers["x-user-id"], 10);
-}
+const { getUserId } = require("../middleware/auth");
 
 router.get("/:memberId", async (req, res) => {
   try {
