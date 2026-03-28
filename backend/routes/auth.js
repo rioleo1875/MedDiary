@@ -74,7 +74,15 @@ router.post("/verify-otp", async (req, res) => {
   if (record.otp !== otp) return res.status(400).json({ success: false, message: "Invalid OTP" });
 
   delete otpStore[email];
-  res.json({ success: true, message: "OTP verified" });
+  
+  // Get user info from database
+  const [userRows] = await db.query("SELECT user_id, name, user_email FROM users WHERE user_email = ?", [email]);
+  
+  res.json({ 
+    success: true, 
+    message: "OTP verified",
+    user: userRows[0]
+  });
 });
 
 // Register

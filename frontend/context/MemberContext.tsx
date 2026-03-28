@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "./AuthContext";
 
 
 
@@ -22,7 +23,7 @@ export type Member = {
 };
 
 type MemberContextType = {
-  userId: number;
+  userId: number | null;
   members: Member[];
   activeMember: Member | null;
   setActiveMember: (member: Member) => void;
@@ -41,13 +42,15 @@ export const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://meddiary-pro
 
 export function MemberProvider({ children }: { children: React.ReactNode }) {
 
-  const userId = 1;
+  const { userId } = useAuth();
 
   const [members, setMembers] = useState<Member[]>([]);
   const [activeMember, setActiveMemberState] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refreshMembers = useCallback(async () => {
+    if (!userId) return;
+    
     try {
       const res = await fetch(`${API_BASE}/api/family/members`, {
         headers: { "x-user-id": String(userId) },
