@@ -113,7 +113,7 @@ export default function EmergencyProfile() {
 
   // ── View another user's emergency summary ───────────────────
   const viewSummary = (targetUserId: number) => {
-    const url = `${API_BASE}/api/summary/emergency/${targetUserId}?userId=${userId}`;
+    const url = `${API_BASE}/api/summary/emergency/${targetUserId}?token=${userId}`;
     Linking.openURL(url).catch(() =>
       Alert.alert("Error", "Could not open summary")
     );
