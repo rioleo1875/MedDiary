@@ -110,14 +110,18 @@ router.delete("/members/:memberId", async (req, res) => {
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     const { memberId } = req.params;
+    console.log("Delete request - userId:", userId, "memberId:", memberId);
 
     // Verify ownership and get relation
     const [rows] = await db.query(
-      `SELECT member_id, relation FROM family_members
+      `SELECT member_id, relation, name, age, gender FROM family_members
        WHERE member_id = ? AND user_id = ?`,
       [memberId, userId]
     );
+    console.log("Query result:", rows);
+    
     if (rows.length === 0) {
+      console.log("Member not found for deletion");
       return res.status(404).json({ error: "Member not found" });
     }
 
@@ -125,11 +129,13 @@ router.delete("/members/:memberId", async (req, res) => {
 
     // Prevent deleting Self if other members still exist (only if relation is explicitly "Self")
     if (rows[0].relation === "Self") {
+      console.log("Self member protection triggered");
       const [otherMembers] = await db.query(
         `SELECT COUNT(*) as count FROM family_members
          WHERE user_id = ? AND member_id != ?`,
         [userId, memberId]
       );
+      console.log("Other members count:", otherMembers[0].count);
       if (otherMembers[0].count > 0) {
         return res.status(400).json({
           error:
@@ -138,10 +144,12 @@ router.delete("/members/:memberId", async (req, res) => {
       }
     }
 
-    await db.query(
+    console.log("Proceeding with deletion...");
+    const [deleteResult] = await db.query(
       `DELETE FROM family_members WHERE member_id = ? AND user_id = ?`,
       [memberId, userId]
     );
+    console.log("Delete result:", deleteResult);
 
     res.json({ message: "Member deleted" });
   } catch (err) {

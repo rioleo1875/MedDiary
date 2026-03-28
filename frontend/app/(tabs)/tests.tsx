@@ -200,7 +200,7 @@ export default function TestScreen() {
       } else {
         // More specific error messages
         if (data.error?.includes("extract text")) {
-          Alert.alert("OCR Error", "This PDF appears to be scanned images. Please try a text-based PDF or clear image file.");
+          Alert.alert("OCR Error");
         } else if (data.error?.includes("network") || data.error?.includes("connection")) {
           Alert.alert("Connection Error", "Network issue. Please check your connection and try again.");
         } else if (data.error?.includes("file")) {
@@ -403,7 +403,7 @@ export default function TestScreen() {
           <View style={styles.warningCard}>
             <Ionicons name="warning-outline" size={20} color="#FF9500" style={{ marginRight: 8 }} />
             <Text style={styles.warningText}>
-              ⚠️ Please cross-check all parsed results with your original report and edit if necessary for accuracy
+              Please cross-check all parsed results with your original report and edit if necessary for accuracy
             </Text>
           </View>
 
