@@ -336,51 +336,11 @@ export default function TestScreen() {
       const testKey = Object.keys(testDict).find(key => {
         const testEntry = testDict[key];
         return testEntry?.aliases?.some((alias: string) => 
-          alias.toLowerCase() === newTestName.toLowerCase()
+          alias.toLowerCase() === newTestName.toLowerCase() ||
+          newTestName.toLowerCase().includes(alias.toLowerCase()) ||
+          alias.toLowerCase().includes(newTestName.toLowerCase())
         );
       });
-      
-      let normalMin = 0;
-      let normalMax = 100;
-      let defaultUnit = "";
-      
-      if (testKey && testDict[testKey]) {
-        normalMin = testDict[testKey].normal_min;
-        normalMax = testDict[testKey].normal_max;
-        defaultUnit = testDict[testKey].unit || "";
-      }
-      
-      const res = await fetch(`${API_BASE}/api/tests/add`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-user-id": String(userId) },
-        body: JSON.stringify({
-          member_id: activeMember.member_id,
-          test_name: newTestName,
-          value: newTestValue, // Send as string, not number
-          unit: newTestUnit || defaultUnit || null,
-          normal_min: normalMin,
-          normal_max: normalMax,
-          test_date: new Date().toISOString().split('T')[0]
-        }),
-      });
-      
-      if (!res.ok) {
-        const error = await res.json();
-        Alert.alert("Error", error.error || "Failed to add test result");
-        return;
-      }
-      
-      Alert.alert("Success", "Test result added!");
-      setShowAddTest(false);
-      setNewTestName("");
-      setNewTestValue("");
-      setNewTestUnit("");
-      await fetchTests();
-    } catch (err) {
-      console.error("Add test error:", err);
-      Alert.alert("Error", `Failed to add test result: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      setAddingTest(false);
     }
   };
 
