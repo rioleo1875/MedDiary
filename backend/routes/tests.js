@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
-
+const testDictionary = require("../services/testDictionary");
 
 function classify(value, min, max) {
   if (min == null || max == null) return "unknown";
@@ -31,13 +31,31 @@ router.post("/add", async (req, res) => {
 
   const numericValue = parseFloat(value);
   const status = classify(numericValue, normal_min, normal_max);
+  
+  // Use provided unit or fallback to testDictionary unit
+  let finalUnit = unit;
+  if (!finalUnit) {
+    // Find matching test in dictionary
+    const testKey = test_name.toLowerCase();
+    if (testDictionary[testKey] && testDictionary[testKey].unit) {
+      finalUnit = testDictionary[testKey].unit;
+    } else {
+      // Try to find by aliases
+      for (const [dictName, entry] of Object.entries(testDictionary)) {
+        if (entry.aliases && entry.aliases.includes(testKey)) {
+          finalUnit = entry.unit;
+          break;
+        }
+      }
+    }
+  }
 
   try {
     await db.query(
       `INSERT INTO test_results
        (member_id, test_name, value, unit, normal_min, normal_max, status, test_date)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [member_id, test_name, numericValue, unit, normal_min, normal_max, status, test_date]
+      [member_id, test_name, numericValue, finalUnit, normal_min, normal_max, status, test_date]
     );
     res.json({ message: "Test result added successfully" });
   } catch (error) {
@@ -45,7 +63,6 @@ router.post("/add", async (req, res) => {
     res.status(500).json({ error: "Failed to add test result" });
   }
 });
-
 
 router.get("/member/:memberId", async (req, res) => {
   const { memberId } = req.params;

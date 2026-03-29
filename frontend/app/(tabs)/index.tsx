@@ -132,15 +132,11 @@ export default function HomeScreen() {
               </Text>
 
               <Text style={styles.info}>
-                Blood Group: {activeMember ? activeMember.blood_group : "Not set"}
+                Blood Group: {activeMember?.blood_group || "N/A"}
               </Text>
 
               <Text style={styles.info}>
                 Age: {activeMember ? activeMember.age : "Not set"}
-              </Text>
-
-              <Text style={styles.info}>
-                 Emergency Contact: {activeMember?.emergency_contact_name ? `${activeMember.emergency_contact_name} (${activeMember.emergency_contact_phone})` : "Not set"}
               </Text>
             </View>
           </View>
