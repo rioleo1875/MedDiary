@@ -287,7 +287,8 @@ module.exports = async function parseLabReport(text, memberId) {
           continue;
         }
 
-        const { value, unit } = extracted;
+        const { value, unit: extractedUnit } = extracted;
+        const unit = extractedUnit || entry.unit || null;
         const status = classify(value, min, max);
 
         seen.add(testName);
