@@ -323,13 +323,13 @@ export default function TestScreen() {
     setAddingTest(true);
     try {
       // Use hardcoded test dictionary since API endpoint doesn't exist
-      const testDict: Record<string, { aliases: string[]; normal_min: number; normal_max: number }> = {
-        fbs: { aliases: ["fbs", "fasting blood sugar", "fasting glucose", "glucose", "blood sugar", "sugar"], normal_min: 70, normal_max: 100 },
-        rbs: { aliases: ["rbs", "random blood sugar", "random glucose"], normal_min: 70, normal_max: 140 },
-        hba1c: { aliases: ["hba1c", "a1c", "glycated hemoglobin"], normal_min: 4, normal_max: 5.6 },
-        tsh: { aliases: ["tsh", "thyroid stimulating hormone", "tsh 3rd generation"], normal_min: 0.4, normal_max: 4.5 },
-        t3: { aliases: ["t3", "triiodothyronine"], normal_min: 80, normal_max: 200 },
-        t4: { aliases: ["t4", "thyroxine"], normal_min: 5, normal_max: 12 },
+      const testDict: Record<string, { aliases: string[]; normal_min: number; normal_max: number; unit: string }> = {
+        fbs: { aliases: ["fbs", "fasting blood sugar", "fasting glucose", "glucose", "blood sugar", "sugar"], normal_min: 70, normal_max: 100, unit: "mg/dL" },
+        rbs: { aliases: ["rbs", "random blood sugar", "random glucose"], normal_min: 70, normal_max: 140, unit: "mg/dL" },
+        hba1c: { aliases: ["hba1c", "a1c", "glycated hemoglobin"], normal_min: 4, normal_max: 5.6, unit: "%" },
+        tsh: { aliases: ["tsh", "thyroid stimulating hormone", "tsh 3rd generation"], normal_min: 0.4, normal_max: 4.5, unit: "µIU/mL" },
+        t3: { aliases: ["t3", "triiodothyronine"], normal_min: 80, normal_max: 200, unit: "ng/dL" },
+        t4: { aliases: ["t4", "thyroxine"], normal_min: 5, normal_max: 12, unit: "µg/dL" },
       };
       
       // Find matching test in dictionary
@@ -342,10 +342,12 @@ export default function TestScreen() {
       
       let normalMin = 0;
       let normalMax = 100;
+      let unit = "";
       
       if (testKey && testDict[testKey]) {
         normalMin = testDict[testKey].normal_min;
         normalMax = testDict[testKey].normal_max;
+        unit = testDict[testKey].unit;
       }
       
       const res = await fetch(`${API_BASE}/api/tests/add`, {
@@ -355,7 +357,7 @@ export default function TestScreen() {
           member_id: activeMember.member_id,
           test_name: newTestName,
           value: newTestValue, // Send as string, not number
-          unit: newTestUnit || null,
+          unit: unit || newTestUnit || null,
           normal_min: normalMin,
           normal_max: normalMax,
           test_date: new Date().toISOString().split('T')[0]
