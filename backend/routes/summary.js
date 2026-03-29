@@ -107,7 +107,7 @@ async function buildSummaryPDF(memberId, doc) {
       doc.circle(50, doc.y + 5, 5).fill(color);
       doc.restore();
       doc.text(
-        `${t.test_name}: ${t.value}${t.unit ? " " + t.unit : ""} (${t.status})`,
+        `${t.test_name}: ${t.value}${t.unit ? " " + t.unit : ""}`,
         70,
         doc.y
       );
