@@ -23,6 +23,8 @@ type TestResult = {
 
 type GroupedDate = { date: string; results: TestResult[] };
 
+type TestDict = Record<string, { aliases: string[]; normal_min: number; normal_max: number; unit?: string }>;
+
 export default function TestScreen() {
   const router = useRouter();
   const { activeMember, userId } = useMember();
@@ -30,6 +32,7 @@ export default function TestScreen() {
   const [grouped, setGrouped] = useState<GroupedDate[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [testDict, setTestDict] = useState<TestDict>({});
 
   // Edit modal
   const [editingTest, setEditingTest] = useState<TestResult | null>(null);
@@ -43,6 +46,21 @@ export default function TestScreen() {
   const [newTestValue, setNewTestValue] = useState("");
   const [newTestUnit, setNewTestUnit] = useState("");
   const [addingTest, setAddingTest] = useState(false);
+
+  // Fetch test dictionary
+  const fetchTestDictionary = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/tests/dictionary`, {
+        headers: { "x-user-id": String(userId) },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTestDict(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch test dictionary:", error);
+    }
+  }, [userId]);
 
   // ── Fetch existing results ──────────────────────────────────
   const fetchTests = useCallback(async () => {
@@ -95,7 +113,10 @@ export default function TestScreen() {
     setLoading(false);
   }, [activeMember?.member_id, userId]);
 
-  useFocusEffect(useCallback(() => { fetchTests(); }, [fetchTests]));
+  useFocusEffect(useCallback(() => { 
+    fetchTests(); 
+    fetchTestDictionary();
+  }, [fetchTests, fetchTestDictionary]));
 
   // ── Upload report ───────────────────────────────────────────
   const handleUpload = async () => {
@@ -322,16 +343,7 @@ export default function TestScreen() {
 
     setAddingTest(true);
     try {
-      // Use hardcoded test dictionary since API endpoint doesn't exist
-      const testDict: Record<string, { aliases: string[]; normal_min: number; normal_max: number; unit?: string }> = {
-        fbs: { aliases: ["fbs", "fasting blood sugar", "fasting glucose", "glucose", "blood sugar", "sugar"], normal_min: 70, normal_max: 100, unit: "mg/dL" },
-        rbs: { aliases: ["rbs", "random blood sugar", "random glucose"], normal_min: 70, normal_max: 140, unit: "mg/dL" },
-        hba1c: { aliases: ["hba1c", "a1c", "glycated hemoglobin"], normal_min: 4, normal_max: 5.6, unit: "%" },
-        tsh: { aliases: ["tsh", "thyroid stimulating hormone", "tsh 3rd generation"], normal_min: 0.4, normal_max: 4.5, unit: "µIU/mL" },
-        t3: { aliases: ["t3", "triiodothyronine"], normal_min: 80, normal_max: 200, unit: "ng/dL" },
-        t4: { aliases: ["t4", "thyroxine"], normal_min: 5, normal_max: 12, unit: "µg/dL" },
-      };
-      
+      // Use fetched test dictionary from API
       // Find matching test in dictionary
       const testKey = Object.keys(testDict).find(key => {
         const testEntry = testDict[key];

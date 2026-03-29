@@ -3,6 +3,26 @@ const router = express.Router();
 const db = require("../config/db");
 const testDictionary = require("../services/testDictionary");
 
+// Serve testDictionary to frontend
+router.get("/dictionary", async (req, res) => {
+  try {
+    // Transform the dictionary to match frontend format
+    const transformedDict = {};
+    for (const [key, entry] of Object.entries(testDictionary)) {
+      transformedDict[key] = {
+        aliases: entry.aliases || [],
+        normal_min: entry.normal_min,
+        normal_max: entry.normal_max,
+        unit: entry.unit || null
+      };
+    }
+    res.json(transformedDict);
+  } catch (error) {
+    console.error("GET /tests/dictionary error:", error);
+    res.status(500).json({ error: "Failed to fetch test dictionary" });
+  }
+});
+
 function classify(value, min, max) {
   if (min == null || max == null) return "unknown";
   if (value >= min && value <= max) return "normal";
