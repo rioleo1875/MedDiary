@@ -17,39 +17,13 @@ async function getDrugInfo(drugName) {
 
 
 function checkInteraction(drugAData, drugBName) {
-  if (!drugAData || !drugAData.purpose_and_indications) {
-    return {
-      severity: "Low",
-      message: "No known interaction"
-    };
-  }
-  
-  // Check specific interaction sections, not general drug information
   const text = JSON.stringify(drugAData).toLowerCase();
-  const drugB = drugBName.toLowerCase();
-  
-  // Look for specific interaction mentions
-  const interactionKeywords = [
-    'interaction', 'interact', 'contraindication', 'contraindicated',
-    'should not be taken with', 'incompatible with', 'adverse reaction'
-  ];
-  
-  // Check if drugB is mentioned in context of interactions
-  for (const keyword of interactionKeywords) {
-    const keywordIndex = text.indexOf(keyword);
-    if (keywordIndex !== -1) {
-      // Check if drugB appears near this keyword
-      const contextStart = Math.max(0, keywordIndex - 50);
-      const contextEnd = Math.min(text.length, keywordIndex + drugB.length + 50);
-      const context = text.substring(contextStart, contextEnd);
-      
-      if (context.includes(drugB)) {
-        return {
-          severity: "High",
-          message: `Possible high-risk interaction detected: ${keyword}`
-        };
-      }
-    }
+
+  if (text.includes(drugBName.toLowerCase())) {
+    return {
+      severity: "High",
+      message: "Possible high-risk interaction"
+    };
   }
 
   return {
@@ -88,8 +62,6 @@ router.post("/check/:userId", async (req, res) => {
     const meds = [...new Set(
       rows.map(r => r.med_name.toLowerCase())
     )];
-    
-    console.log(`Checking interactions for medications: [${meds.join(', ')}]`);
   
     let interactions = [];
 
@@ -98,17 +70,11 @@ router.post("/check/:userId", async (req, res) => {
         const drugA = meds[i];
         const drugB = meds[j];
 
-        console.log(`Checking interaction between: ${drugA} and ${drugB}`);
-
         try {
           const drugAData = await getDrugInfo(drugA);
-          if (!drugAData) {
-            console.log(`No FDA data found for: ${drugA}`);
-            continue;
-          }
+          if (!drugAData) continue;
 
           const result = checkInteraction(drugAData, drugB);
-          console.log(`Interaction result for ${drugA} & ${drugB}:`, result);
 
           if (result.severity === "High") {
             interactions.push({
