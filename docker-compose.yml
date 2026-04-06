@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: meddiary-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-meddiary}
+      MYSQL_USER: ${MYSQL_USER:-meddiary}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-meddiary123}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - meddiary-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      interval: 30s
+      start_period: 40s
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: meddiary-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: mysql
+      DB_USER: ${MYSQL_USER:-meddiary}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-meddiary123}
+      DB_NAME: ${MYSQL_DATABASE:-meddiary}
+      DB_PORT: 3306
+      # Email configuration
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@meddiary.com}
+      # OCR configuration
+      LAB_PARSE_DEBUG: ${LAB_PARSE_DEBUG:-0}
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/logs:/app/logs
+    networks:
+      - meddiary-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      timeout: 10s
+      retries: 3
+      interval: 30s
+      start_period: 40s
+
+  # Frontend (Development only)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: meddiary-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      EXPO_PUBLIC_API_URL: http://localhost:3000/api
+      EXPO_PUBLIC_APP_NAME: MedDiary
+      EXPO_PUBLIC_DEV_MODE: "true"
+    ports:
+      - "${FRONTEND_PORT:-8081}:8081"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - ~/.expo:/root/.expo
+    networks:
+      - meddiary-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    profiles:
+      - development
+
+  # Nginx (Production reverse proxy)
+  nginx:
+    image: nginx:alpine
+    container_name: meddiary-nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_PORT:-80}:80"
+      - "${NGINX_SSL_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./frontend/web-build:/usr/share/nginx/html:ro
+    networks:
+      - meddiary-network
+    depends_on:
+      - backend
+    profiles:
+      - production
+
+# Networks
+networks:
+  meddiary-network:
+    driver: bridge
+    name: meddiary-network
+
+# Volumes
+volumes:
+  mysql_data:
+    driver: local
+    name: meddiary-mysql-data
